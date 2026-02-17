@@ -1,0 +1,2236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ForeFathers DAO — IP Tokenization on XRPL</title>
+  <meta name="description" content="The IP tokenization system that licenses itself. Protect, tokenize, and monetize intellectual property on XRPL with PermissionedDomains." />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="ForeFathers DAO — IP Tokenization on XRPL" />
+  <meta property="og:description" content="The IP tokenization system that licenses itself." />
+  <meta property="og:type" content="website" />
+
+  <!-- Fonts: Cormorant Garamond (display) + DM Mono (technical) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ================================================================
+       DESIGN TOKENS
+    ================================================================ */
+    :root {
+      --ink:     #0c0c0e;
+      --stone:   #1a1a1f;
+      --slate:   #2a2a35;
+      --fog:     #6b6b80;
+      --silver:  #b8b8cc;
+      --ivory:   #f0ede8;
+      --gold:    #c9a84c;
+      --gold-lt: #e8cc7a;
+      --xrp:     #00b4d8;
+      --xrp-dk:  #0077a8;
+
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-mono:    'DM Mono', 'Courier New', monospace;
+
+      --r-sm:  4px;
+      --r-md:  8px;
+      --r-lg:  16px;
+
+      --nav-h: 68px;
+    }
+
+    /* ================================================================
+       RESET & BASE
+    ================================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      background: var(--ink);
+      color: var(--ivory);
+      font-family: var(--font-mono);
+      font-weight: 300;
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    img { max-width: 100%; display: block; }
+    a   { color: inherit; text-decoration: none; }
+
+    ::selection { background: var(--gold); color: var(--ink); }
+
+    /* ================================================================
+       SCROLLBAR
+    ================================================================ */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--ink); }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+    /* ================================================================
+       NAVIGATION
+    ================================================================ */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      z-index: 900;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2.5rem;
+      border-bottom: 1px solid rgba(201,168,76,.15);
+      backdrop-filter: blur(20px) saturate(1.2);
+      background: rgba(12,12,14,.85);
+      transition: background .3s;
+    }
+
+    .nav-brand {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      color: var(--ivory);
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .nav-brand .infinity {
+      color: var(--gold);
+      font-size: 1.7rem;
+      line-height: 1;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: .25rem;
+    }
+
+    .nav-links a,
+    .nav-links button {
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      font-weight: 400;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--silver);
+      background: none;
+      border: none;
+      padding: .45rem .9rem;
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      transition: color .2s, background .2s;
+      position: relative;
+    }
+
+    .nav-links a:hover,
+    .nav-links button:hover {
+      color: var(--ivory);
+      background: rgba(255,255,255,.05);
+    }
+
+    /* Connect Wallet — gold pill */
+    .btn-wallet {
+      font-family: var(--font-mono) !important;
+      font-size: .72rem !important;
+      font-weight: 500 !important;
+      letter-spacing: .12em !important;
+      text-transform: uppercase !important;
+      color: var(--ink) !important;
+      background: var(--gold) !important;
+      border: none !important;
+      padding: .48rem 1.1rem !important;
+      border-radius: 100px !important;
+      cursor: pointer !important;
+      transition: background .2s, transform .15s !important;
+    }
+
+    .btn-wallet:hover {
+      background: var(--gold-lt) !important;
+      transform: translateY(-1px) !important;
+    }
+
+    .btn-wallet.connected {
+      background: rgba(0,180,216,.15) !important;
+      color: var(--xrp) !important;
+      border: 1px solid var(--xrp) !important;
+    }
+
+    /* Wallet status dot */
+    .wallet-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--xrp);
+      margin-right: .4rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+
+    /* Mobile hamburger */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: .4rem;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 22px; height: 1.5px;
+      background: var(--ivory);
+      transition: all .3s;
+    }
+
+    /* ================================================================
+       DOMAIN SWITCHER — top of nav, cross-site navigator
+    ================================================================ */
+    .domain-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 28px;
+      z-index: 901;
+      background: rgba(6,6,8,.97);
+      border-bottom: 1px solid rgba(201,168,76,.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    .domain-bar-inner {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    .domain-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      font-family: var(--font-mono);
+      font-size: .58rem;
+      font-weight: 400;
+      letter-spacing: .1em;
+      text-transform: lowercase;
+      color: var(--fog);
+      padding: 0 .85rem;
+      height: 28px;
+      border-right: 1px solid rgba(255,255,255,.05);
+      cursor: pointer;
+      text-decoration: none;
+      transition: color .2s, background .2s;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .domain-tab:first-child { border-left: 1px solid rgba(255,255,255,.05); }
+
+    .domain-tab:hover {
+      color: var(--ivory);
+      background: rgba(255,255,255,.04);
+    }
+
+    .domain-tab.active {
+      color: var(--gold);
+      background: rgba(201,168,76,.06);
+    }
+
+    .domain-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1.5px;
+      background: var(--gold);
+    }
+
+    .domain-tab .tab-icon {
+      font-size: .7rem;
+      opacity: .7;
+    }
+
+    .domain-tab .tab-status {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--fog);
+      flex-shrink: 0;
+    }
+
+    .domain-tab .tab-status.live {
+      background: #4ade80;
+      box-shadow: 0 0 4px rgba(74,222,128,.6);
+      animation: pulse 2.5s infinite;
+    }
+
+    .domain-tab .tab-status.pending {
+      background: var(--gold);
+      opacity: .6;
+    }
+
+    /* Push nav down to sit below the domain bar */
+    nav {
+      top: 28px !important;
+    }
+
+    /* Hero and scroll offset */
+    :root { --domain-bar-h: 28px; }
+
+    /* Mobile: collapse domain bar to icons only */
+    @media (max-width: 600px) {
+      .domain-tab .tab-label { display: none; }
+      .domain-tab { padding: 0 .6rem; }
+    }
+
+    /* ================================================================
+       HERO
+    ================================================================ */
+    .hero {
+      position: relative;
+      min-height: 100svh;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      padding-top: var(--domain-bar-h);
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      /* Replace src with your actual image file path */
+      background-image: url('/images/pexels-sam-mccool-1923523643-34030911.jpg');
+      background-size: cover;
+      background-position: center 30%;
+      background-attachment: fixed;
+      filter: brightness(.28) saturate(.7);
+      transform: scale(1.02);
+      transition: transform 8s ease-out;
+    }
+
+    .hero-bg.loaded { transform: scale(1); }
+
+    /* Ink gradient overlay */
+    .hero-veil {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(12,12,14,.9) 0%, transparent 60%),
+        linear-gradient(to top, rgba(12,12,14,1) 0%, transparent 40%);
+    }
+
+    /* Gold diagonal accent */
+    .hero-accent {
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px;
+      height: 55%;
+      background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+      margin-left: 2.5rem;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      padding: calc(var(--nav-h) + var(--domain-bar-h) + 4rem) 2.5rem 6rem;
+      max-width: 780px;
+    }
+
+    .hero-eyebrow {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp .8s .2s forwards;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 300;
+      line-height: 1.08;
+      letter-spacing: -.01em;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp .8s .4s forwards;
+    }
+
+    .hero-title em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .hero-subtitle {
+      font-family: var(--font-mono);
+      font-size: .9rem;
+      font-weight: 300;
+      color: var(--silver);
+      line-height: 1.8;
+      max-width: 520px;
+      margin-bottom: 2.5rem;
+      opacity: 0;
+      animation: fadeUp .8s .6s forwards;
+    }
+
+    .hero-cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      opacity: 0;
+      animation: fadeUp .8s .8s forwards;
+    }
+
+    /* Lemniscate ring tags */
+    .rings-badge {
+      position: absolute;
+      bottom: 3rem;
+      right: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: .4rem;
+      opacity: 0;
+      animation: fadeIn 1s 1.2s forwards;
+    }
+
+    .ring-tag {
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      letter-spacing: .12em;
+      color: var(--fog);
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .ring-tag::before {
+      content: '';
+      display: block;
+      width: 20px; height: 1px;
+      background: var(--gold);
+      opacity: .4;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* ================================================================
+       BUTTONS (shared)
+    ================================================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      font-weight: 400;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: .75rem 1.6rem;
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      transition: all .2s;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: var(--ink);
+    }
+
+    .btn-primary:hover {
+      background: var(--gold-lt);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(201,168,76,.3);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--ivory);
+      border: 1px solid rgba(240,237,232,.2);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      transform: translateY(-2px);
+    }
+
+    .btn-xrp {
+      background: rgba(0,180,216,.1);
+      color: var(--xrp);
+      border: 1px solid rgba(0,180,216,.3);
+    }
+
+    .btn-xrp:hover {
+      background: rgba(0,180,216,.2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,180,216,.15);
+    }
+
+    /* ================================================================
+       SECTION BASE
+    ================================================================ */
+    section {
+      padding: 7rem 2.5rem;
+    }
+
+    .section-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 28px; height: 1px;
+      background: var(--gold);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 300;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+
+    .section-title em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .section-body {
+      font-size: .85rem;
+      color: var(--silver);
+      line-height: 1.9;
+      max-width: 640px;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(201,168,76,.25), transparent);
+      margin: 0 2.5rem;
+    }
+
+    /* ================================================================
+       FEATURE GRID  (The 7 Rings)
+    ================================================================ */
+    .rings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1px;
+      background: rgba(201,168,76,.08);
+      border: 1px solid rgba(201,168,76,.08);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      margin-top: 3.5rem;
+    }
+
+    .ring-card {
+      background: var(--stone);
+      padding: 2rem;
+      transition: background .2s;
+      cursor: default;
+    }
+
+    .ring-card:hover {
+      background: var(--slate);
+    }
+
+    .ring-num {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .15em;
+      color: var(--gold);
+      margin-bottom: .75rem;
+      opacity: .7;
+    }
+
+    .ring-name {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 400;
+      margin-bottom: .5rem;
+    }
+
+    .ring-desc {
+      font-size: .75rem;
+      color: var(--fog);
+      line-height: 1.7;
+    }
+
+    .ring-domain {
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      color: var(--xrp);
+      margin-top: .75rem;
+      opacity: .7;
+    }
+
+    /* ================================================================
+       PORTAL BUTTONS SECTION
+    ================================================================ */
+    .portals-section {
+      background: var(--stone);
+    }
+
+    .portals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-top: 3rem;
+    }
+
+    .portal-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: .75rem;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: var(--r-md);
+      padding: 1.75rem;
+      cursor: pointer;
+      transition: all .25s;
+      position: relative;
+      overflow: hidden;
+      text-decoration: none;
+      color: var(--ivory);
+    }
+
+    .portal-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(201,168,76,.06), transparent 60%);
+      opacity: 0;
+      transition: opacity .25s;
+    }
+
+    .portal-card:hover {
+      border-color: rgba(201,168,76,.3);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0,0,0,.4);
+    }
+
+    .portal-card:hover::before { opacity: 1; }
+
+    .portal-card.xrp-card::before {
+      background: radial-gradient(circle at top left, rgba(0,180,216,.06), transparent 60%);
+    }
+
+    .portal-card.xrp-card:hover {
+      border-color: rgba(0,180,216,.3);
+    }
+
+    .portal-icon {
+      width: 40px; height: 40px;
+      border-radius: var(--r-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      background: rgba(201,168,76,.1);
+    }
+
+    .portal-card.xrp-card .portal-icon {
+      background: rgba(0,180,216,.1);
+    }
+
+    .portal-card.green-card .portal-icon {
+      background: rgba(0,200,120,.1);
+    }
+
+    .portal-card.purple-card .portal-icon {
+      background: rgba(160,100,240,.1);
+    }
+
+    .portal-card.linkedin-card .portal-icon {
+      background: rgba(10,102,194,.1);
+    }
+
+    .portal-title {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .portal-desc {
+      font-size: .72rem;
+      color: var(--fog);
+      line-height: 1.6;
+    }
+
+    .portal-arrow {
+      margin-top: auto;
+      font-size: .8rem;
+      color: var(--gold);
+      opacity: .5;
+      transition: opacity .2s, transform .2s;
+    }
+
+    .portal-card:hover .portal-arrow {
+      opacity: 1;
+      transform: translateX(4px);
+    }
+
+    /* ================================================================
+       PERMISSIONED DOMAINS SECTION
+    ================================================================ */
+    .domains-tree {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      background: rgba(0,0,0,.4);
+      border: 1px solid rgba(201,168,76,.12);
+      border-radius: var(--r-md);
+      padding: 2rem;
+      margin-top: 2.5rem;
+      line-height: 2;
+      overflow-x: auto;
+    }
+
+    .tree-root  { color: var(--gold); }
+    .tree-branch { color: var(--silver); }
+    .tree-leaf   { color: var(--xrp); }
+    .tree-meta   { color: var(--fog); }
+    .tree-icon   { margin-right: .4rem; }
+
+    /* ================================================================
+       TIER CARDS
+    ================================================================ */
+    .tiers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+
+    .tier-card {
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: var(--r-lg);
+      padding: 2.25rem;
+      position: relative;
+      transition: transform .25s, box-shadow .25s;
+    }
+
+    .tier-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+
+    .tier-card.featured {
+      border-color: rgba(201,168,76,.4);
+      background: rgba(201,168,76,.04);
+    }
+
+    .tier-badge {
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--ink);
+      background: var(--gold);
+      padding: .2rem .6rem;
+      border-radius: 100px;
+      position: absolute;
+      top: -10px; left: 1.5rem;
+    }
+
+    .tier-name {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      margin-bottom: .25rem;
+    }
+
+    .tier-price {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: var(--gold);
+      margin-bottom: 1.5rem;
+    }
+
+    .tier-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .tier-features li {
+      font-size: .75rem;
+      color: var(--silver);
+      display: flex;
+      align-items: flex-start;
+      gap: .6rem;
+    }
+
+    .tier-features li::before {
+      content: '→';
+      color: var(--gold);
+      flex-shrink: 0;
+      margin-top: .05em;
+    }
+
+    /* ================================================================
+       PAYMENT PORTAL MODAL
+    ================================================================ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0,0,0,.8);
+      backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--stone);
+      border: 1px solid rgba(201,168,76,.2);
+      border-radius: var(--r-lg);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 480px;
+      position: relative;
+      animation: modalIn .3s ease-out;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(.95) translateY(16px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem; right: 1rem;
+      background: none;
+      border: none;
+      color: var(--fog);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: .25rem;
+      transition: color .2s;
+    }
+
+    .modal-close:hover { color: var(--ivory); }
+
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 400;
+      margin-bottom: .5rem;
+    }
+
+    .modal-sub {
+      font-size: .75rem;
+      color: var(--fog);
+      margin-bottom: 2rem;
+    }
+
+    .modal-xrp-amount {
+      font-family: var(--font-mono);
+      font-size: 2rem;
+      font-weight: 500;
+      color: var(--gold);
+      margin-bottom: .25rem;
+    }
+
+    .modal-wallet-field {
+      background: rgba(0,0,0,.4);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--r-sm);
+      padding: .9rem 1rem;
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: var(--xrp);
+      word-break: break-all;
+      margin: 1rem 0;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+
+    .modal-wallet-field:hover {
+      border-color: var(--xrp);
+    }
+
+    .modal-memo {
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      color: var(--fog);
+      background: rgba(0,0,0,.3);
+      border: 1px solid rgba(255,255,255,.05);
+      border-radius: var(--r-sm);
+      padding: .75rem 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-info {
+      font-size: .72rem;
+      color: var(--silver);
+      line-height: 1.7;
+      background: rgba(0,180,216,.05);
+      border: 1px solid rgba(0,180,216,.15);
+      border-radius: var(--r-sm);
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .copy-toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--gold);
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      letter-spacing: .1em;
+      padding: .6rem 1.4rem;
+      border-radius: 100px;
+      pointer-events: none;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    .copy-toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ================================================================
+       MEMBERS MODAL
+    ================================================================ */
+    .members-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .members-step {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(201,168,76,.15);
+      border: 1px solid rgba(201,168,76,.3);
+      color: var(--gold);
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-info { flex: 1; }
+    .step-title { font-size: .8rem; font-weight: 500; margin-bottom: .2rem; }
+    .step-desc { font-size: .72rem; color: var(--fog); line-height: 1.5; }
+
+    /* ================================================================
+       DEVNET SECTION INDICATOR
+    ================================================================ */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .1em;
+      color: var(--xrp);
+      background: rgba(0,180,216,.08);
+      border: 1px solid rgba(0,180,216,.2);
+      border-radius: 100px;
+      padding: .3rem .9rem;
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--xrp);
+      animation: pulse 2s infinite;
+    }
+
+    /* ================================================================
+       FOOTER
+    ================================================================ */
+    footer {
+      padding: 3rem 2.5rem;
+      border-top: 1px solid rgba(201,168,76,.08);
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .footer-brand {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      color: var(--ivory);
+      margin-bottom: .5rem;
+    }
+
+    .footer-tagline {
+      font-size: .72rem;
+      color: var(--fog);
+      max-width: 260px;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+
+    .footer-links a {
+      font-size: .72rem;
+      color: var(--fog);
+      transition: color .2s;
+    }
+
+    .footer-links a:hover { color: var(--gold); }
+
+    .footer-legal {
+      width: 100%;
+      font-size: .65rem;
+      color: var(--slate);
+      border-top: 1px solid rgba(255,255,255,.03);
+      padding-top: 1.5rem;
+      margin-top: .5rem;
+    }
+
+    /* ================================================================
+       SCROLL REVEAL
+    ================================================================ */
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity .7s ease, transform .7s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ================================================================
+       MOBILE
+    ================================================================ */
+    @media (max-width: 768px) {
+      nav { padding: 0 1.25rem; }
+
+      .nav-links {
+        display: none;
+        position: fixed;
+        top: calc(var(--nav-h) + var(--domain-bar-h));
+        left: 0; right: 0;
+        background: var(--stone);
+        flex-direction: column;
+        padding: 1.5rem;
+        gap: .5rem;
+        border-bottom: 1px solid rgba(201,168,76,.1);
+        z-index: 899;
+      }
+
+      .nav-links.open { display: flex; }
+
+      .nav-links a,
+      .nav-links button {
+        width: 100%;
+        text-align: left;
+        padding: .7rem 1rem;
+      }
+
+      .hamburger { display: flex; }
+
+      .hero-content { padding-bottom: 8rem; }
+
+      .rings-badge { display: none; }
+
+      section { padding: 5rem 1.25rem; }
+
+      .divider { margin: 0 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ================================================================
+     NAVIGATION
+================================================================ -->
+<!-- ================================================================
+     DOMAIN SWITCHER BAR — cross-site navigator
+================================================================ -->
+<div class="domain-bar" role="navigation" aria-label="Switch between ForeFathers domains">
+  <div class="domain-bar-inner">
+
+    <!-- Web3 Site (current) -->
+    <a href="/" class="domain-tab active" aria-label="Web3 Site — you are here" title="forefathers.dao (Web3)">
+      <span class="tab-icon">⬡</span>
+      <span class="tab-label">forefathers.dao</span>
+      <span class="tab-status live" title="Live"></span>
+    </a>
+
+    <!-- Discord Server -->
+    <a id="ds-discord-tab"
+       href="https://discord.gg/forefathers-dao"
+       target="_blank" rel="noopener noreferrer"
+       class="domain-tab"
+       aria-label="ForeFathers DAO Discord Server"
+       title="discord.gg/forefathers-dao">
+      <span class="tab-icon">🎮</span>
+      <span class="tab-label">discord.gg/forefathers</span>
+      <span class="tab-status live" title="Live"></span>
+    </a>
+
+    <!-- XRPL PermissionedDomain -->
+    <a id="ds-domain-tab"
+       href="#"
+       onclick="openPermissionedDomainTab(event)"
+       class="domain-tab"
+       aria-label="ForeFathers DAO PermissionedDomain on XRPL"
+       title="forefathers.dao on XRPL ledger">
+      <span class="tab-icon">◈</span>
+      <span class="tab-label" id="ds-domain-label">xrpl://forefathers.dao</span>
+      <span class="tab-status pending" id="ds-domain-status" title="Pending setup"></span>
+    </a>
+
+    <!-- LinkedIn -->
+    <a href="https://linkedin.com/company/forefathers-dao"
+       target="_blank" rel="noopener noreferrer"
+       class="domain-tab"
+       aria-label="ForeFathers DAO on LinkedIn"
+       title="linkedin.com/company/forefathers-dao">
+      <span class="tab-icon" style="font-style:normal">in</span>
+      <span class="tab-label">linkedin</span>
+    </a>
+
+  </div>
+</div>
+
+<nav id="main-nav" role="navigation" aria-label="Main navigation">
+  <a href="/" class="nav-brand" aria-label="ForeFathers DAO home">
+    <span class="infinity" aria-hidden="true">∞</span>
+    ForeFathers DAO
+  </a>
+
+  <div class="nav-links" id="nav-links" role="menubar">
+    <a href="#portals" role="menuitem">Portals</a>
+    <a href="#rings"   role="menuitem">7 Rings</a>
+    <a href="#tiers"   role="menuitem">Licensing</a>
+    <a href="#domains" role="menuitem">Domains</a>
+
+    <!-- Payment Portal -->
+    <button onclick="openModal('payment-modal')" role="menuitem" aria-haspopup="dialog">
+      Payment Portal
+    </button>
+
+    <!-- Members Only -->
+    <button onclick="openModal('members-modal')" role="menuitem" aria-haspopup="dialog">
+      Members Only
+    </button>
+
+    <!-- LinkedIn -->
+    <a href="https://linkedin.com/company/forefathers-dao"
+       target="_blank" rel="noopener noreferrer"
+       role="menuitem"
+       aria-label="ForeFathers DAO on LinkedIn">
+      LinkedIn ↗
+    </a>
+
+    <!-- Discord Server -->
+    <a id="discord-nav-link"
+       href="https://discord.gg/forefathers-dao"
+       target="_blank" rel="noopener noreferrer"
+       role="menuitem"
+       aria-label="Join ForeFathers DAO on Discord"
+       style="color: #5865F2 !important;">
+      Discord ↗
+    </a>
+
+    <!-- Connect Wallet -->
+    <button class="btn-wallet" id="wallet-btn" onclick="connectWallet()" role="menuitem">
+      Connect Wallet
+    </button>
+  </div>
+
+  <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ================================================================
+     HERO
+================================================================ -->
+<section class="hero" id="home" aria-label="Hero">
+  <div class="hero-bg" id="hero-bg"></div>
+  <div class="hero-veil"></div>
+  <div class="hero-accent" aria-hidden="true"></div>
+
+  <div class="hero-content">
+    <p class="hero-eyebrow">ForeFathers DAO  ·  XRPL PermissionedDomains</p>
+
+    <h1 class="hero-title">
+      The IP system<br />
+      that <em>licenses itself</em>
+    </h1>
+
+    <p class="hero-subtitle">
+      Tokenize patents, trade secrets, and intellectual property on XRPL.
+      Ledger-enforced access control. No intermediaries. Yours forever.
+    </p>
+
+    <div class="hero-cta-row">
+      <button class="btn btn-primary" onclick="openModal('payment-modal')">
+        Enter the Gate →
+      </button>
+      <a href="#rings" class="btn btn-ghost">
+        The 7 Rings
+      </a>
+      <a href="#devnet" class="btn btn-xrp">
+        ◈ Dev Net
+      </a>
+    </div>
+  </div>
+
+  <!-- Ring annotations -->
+  <div class="rings-badge" aria-hidden="true">
+    <span class="ring-tag">Ring 1 — Identity</span>
+    <span class="ring-tag">Ring 2 — NDA</span>
+    <span class="ring-tag">Ring 3 — Escrow</span>
+    <span class="ring-tag">Ring 4 — Approval</span>
+    <span class="ring-tag">Ring 5 — License NFT</span>
+    <span class="ring-tag">Ring 6 — THE-CODE</span>
+    <span class="ring-tag">Ring 7 — Community</span>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================================================================
+     PORTALS
+================================================================ -->
+<section class="portals-section" id="portals">
+  <div class="section-inner">
+    <div class="reveal">
+      <p class="section-label">Quick Access</p>
+      <h2 class="section-title">Your <em>Portals</em></h2>
+      <p class="section-body">
+        Everything you need, one click away. Fully decentralized —
+        no Stripe, no third-party rails. Payments settle directly on XRPL.
+      </p>
+    </div>
+
+    <div class="portals-grid reveal">
+
+      <!-- Connect Wallet -->
+      <div class="portal-card" onclick="connectWallet()" tabindex="0" role="button" aria-label="Connect XRPL Wallet">
+        <div class="portal-icon">🔑</div>
+        <div class="portal-title">Connect Wallet</div>
+        <p class="portal-desc">Link your XRPL wallet to verify holdings and access your licensed secrets.</p>
+        <span class="portal-arrow">→</span>
+      </div>
+
+      <!-- Payment Portal -->
+      <div class="portal-card" onclick="openModal('payment-modal')" tabindex="0" role="button" aria-label="Payment Portal">
+        <div class="portal-icon">◈</div>
+        <div class="portal-title">Payment Portal</div>
+        <p class="portal-desc">Send license fees directly in XRP. No fiat, no middlemen. Escrow-protected.</p>
+        <span class="portal-arrow">→</span>
+      </div>
+
+      <!-- Members Only -->
+      <div class="portal-card green-card" onclick="openModal('members-modal')" tabindex="0" role="button" aria-label="Members Only Area">
+        <div class="portal-icon">🏛</div>
+        <div class="portal-title">Members Only</div>
+        <p class="portal-desc">Access the complete THE-CODE package and your licensed trade secrets.</p>
+        <span class="portal-arrow">→</span>
+      </div>
+
+      <!-- XRPL Permissioned Domain -->
+      <div class="portal-card xrp-card"
+           id="domain-portal-card"
+           onclick="openDomainsPortal()"
+           tabindex="0" role="button"
+           aria-label="XRPL Permissioned Domain">
+        <div class="portal-icon" style="background:rgba(0,180,216,.1);color:var(--xrp)">⬡</div>
+        <div class="portal-title">Permissioned Domain</div>
+        <p class="portal-desc">View your domain permissions, accessible secrets, and audit trail on-ledger.</p>
+        <!-- Shown once domain is configured -->
+        <div id="domain-direct-link" style="display:none; margin-top:.5rem;">
+          <span id="domain-direct-url"
+                style="font-family:var(--font-mono);font-size:.58rem;
+                       color:var(--xrp);word-break:break-all;
+                       border-bottom:1px dashed rgba(0,180,216,.4);
+                       padding-bottom:1px;"></span>
+          <span style="font-family:var(--font-mono);font-size:.58rem;
+                       color:var(--gold);margin-left:.4rem;">↗ live</span>
+        </div>
+        <span class="portal-arrow" style="color:var(--xrp)">→</span>
+      </div>
+
+      <!-- LinkedIn -->
+      <a class="portal-card linkedin-card"
+         href="https://linkedin.com/company/forefathers-dao"
+         target="_blank" rel="noopener noreferrer"
+         aria-label="ForeFathers DAO on LinkedIn">
+        <div class="portal-icon" style="background:rgba(10,102,194,.1)">in</div>
+        <div class="portal-title">LinkedIn</div>
+        <p class="portal-desc">Follow ForeFathers DAO for IP tokenization news, case studies, and updates.</p>
+        <span class="portal-arrow">↗</span>
+      </a>
+
+      <!-- Dev Net -->
+      <a class="portal-card xrp-card" href="#devnet" aria-label="XRPL Dev Net">
+        <div class="portal-icon">🛠</div>
+        <div class="portal-title">Dev Net</div>
+        <p class="portal-desc">Test the full 7-ring flow on XRPL Testnet. Free XRP, zero risk.</p>
+        <span class="portal-arrow" style="color:var(--xrp)">→</span>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================================================================
+     THE 7 RINGS
+================================================================ -->
+<section id="rings">
+  <div class="section-inner">
+    <div class="reveal">
+      <p class="section-label">The Onboarding</p>
+      <h2 class="section-title">Seven <em>Rings</em> of Access</h2>
+      <p class="section-body">
+        By the time you complete the final ring, you've already seen the
+        system work — on-ledger, immutable, yours.
+      </p>
+    </div>
+
+    <div class="rings-grid reveal">
+      <div class="ring-card">
+        <div class="ring-num">Ring 01</div>
+        <div class="ring-name">Identity</div>
+        <p class="ring-desc">Biometric verification via Wick. Proves you're a unique human, not a bot.</p>
+        <div class="ring-domain">forefathers.dao/identity/{you}</div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-num">Ring 02</div>
+        <div class="ring-name">NDA</div>
+        <p class="ring-desc">Sign the Non-Disclosure Agreement. Stored as a hash on XRPL forever.</p>
+        <div class="ring-domain">forefathers.dao/legal/nda/{you}</div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-num">Ring 03</div>
+        <div class="ring-name">Escrow</div>
+        <p class="ring-desc">License fee held in a PermissionedDomain escrow. Released only on approval.</p>
+        <div class="ring-domain">forefathers.dao/escrow/{payment_id}</div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-num">Ring 04</div>
+        <div class="ring-name">Approval</div>
+        <p class="ring-desc">2-of-3 founder multi-signature required. On-ledger governance, not email.</p>
+        <div class="ring-domain">multi-sig · 2 / 3 founders</div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-num">Ring 05</div>
+        <div class="ring-name">License NFT</div>
+        <p class="ring-desc">Your NFT is minted. PermissionedDomain READ access granted to your tier.</p>
+        <div class="ring-domain">forefathers.dao/licenses/{nft_id}</div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-num">Ring 06</div>
+        <div class="ring-name">THE-CODE</div>
+        <p class="ring-desc">Download the complete IP tokenization framework. 300+ trade secrets available.</p>
+        <div class="ring-domain">the-code · artifact package</div>
+      </div>
+      <div class="ring-card">
+        <div class="ring-num">Ring 07</div>
+        <div class="ring-name">Community</div>
+        <p class="ring-desc">Full Discord access, founder support, and revenue share eligibility.</p>
+        <div class="ring-domain">forefathers.dao/community</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================================================================
+     PERMISSIONED DOMAINS
+================================================================ -->
+<section id="domains" style="background: var(--stone);">
+  <div class="section-inner">
+    <div class="reveal">
+      <p class="section-label">XRPL Architecture</p>
+      <h2 class="section-title">PermissionedDomain <em>Structure</em></h2>
+      <p class="section-body">
+        All data lives on the XRPL ledger inside namespaced PermissionedDomains.
+        Unhackable access control — not code, not a database.
+      </p>
+    </div>
+
+    <div class="domains-tree reveal" role="tree" aria-label="Domain tree structure">
+<span class="tree-root tree-icon">◈</span><span class="tree-root">forefathers.dao</span>
+<span class="tree-branch">├── </span><span class="tree-leaf">identity/</span>        <span class="tree-meta">← Ring 1 · biometric proofs</span>
+<span class="tree-branch">├── </span><span class="tree-leaf">legal/nda/</span>       <span class="tree-meta">← Ring 2 · signed agreements</span>
+<span class="tree-branch">├── </span><span class="tree-leaf">escrow/</span>          <span class="tree-meta">← Ring 3 · XRP held pending approval</span>
+<span class="tree-branch">├── </span><span class="tree-leaf">licenses/</span>        <span class="tree-meta">← Ring 5 · NFT license records</span>
+<span class="tree-branch">└── </span><span class="tree-leaf">secrets/</span>         <span class="tree-meta">← 303 trade secrets, tiered access</span>
+<span class="tree-branch">    ├── </span><span class="tree-leaf">biometric/</span>   <span class="tree-meta">G.1 · H.2 · H.5  [Tier 2+]</span>
+<span class="tree-branch">    ├── </span><span class="tree-leaf">ai/</span>          <span class="tree-meta">C.1 · C.7         [Tier 2+]</span>
+<span class="tree-branch">    ├── </span><span class="tree-leaf">legal/</span>       <span class="tree-meta">B.1 · B.9         [Tier 1+]</span>
+<span class="tree-branch">    ├── </span><span class="tree-leaf">patent/</span>      <span class="tree-meta">A.1 · A.2         [Tier 2+]</span>
+<span class="tree-branch">    ├── </span><span class="tree-leaf">governance/</span>  <span class="tree-meta">E.1 · E.4 · E.5   [Tier 2+]</span>
+<span class="tree-branch">    ├── </span><span class="tree-leaf">crypto/</span>      <span class="tree-meta">J.5               [Tier 2+]</span>
+<span class="tree-branch">    ├── </span><span class="tree-leaf">nft/</span>         <span class="tree-meta">K.1 · M.1 · M.10  [Tier 1+]</span>
+<span class="tree-branch">    ├── </span><span class="tree-leaf">financial/</span>   <span class="tree-meta">D.1               [Tier 2+]</span>
+<span class="tree-branch">    ├── </span><span class="tree-leaf">economic/</span>    <span class="tree-meta">N.1               [Tier 3]</span>
+<span class="tree-branch">    └── </span><span class="tree-leaf">dna/</span>         <span class="tree-meta">R.1               [Tier 3]</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================================================================
+     TIERS
+================================================================ -->
+<section id="tiers">
+  <div class="section-inner">
+    <div class="reveal">
+      <p class="section-label">Licensing</p>
+      <h2 class="section-title">Choose Your <em>Tier</em></h2>
+      <p class="section-body">
+        All payments in XRP. No Stripe. No bank. Direct to escrow — released
+        only after founder approval. Fully decentralized.
+      </p>
+    </div>
+
+    <div class="tiers-grid reveal">
+      <div class="tier-card">
+        <div class="tier-name">Individual</div>
+        <div class="tier-price">100 XRP · ~$200</div>
+        <ul class="tier-features">
+          <li>10 demo trade secrets</li>
+          <li>Full IP tokenization framework</li>
+          <li>XRPL NFT minting tools</li>
+          <li>Discord community access</li>
+          <li>Testnet deployment guide</li>
+        </ul>
+        <button class="btn btn-ghost" onclick="selectTier('tier_1_individual', 100, 'Individual')">
+          Begin Ring 3 →
+        </button>
+      </div>
+
+      <div class="tier-card featured">
+        <div class="tier-badge">Most Popular</div>
+        <div class="tier-name">Business</div>
+        <div class="tier-price">500 XRP · ~$1,000</div>
+        <ul class="tier-features">
+          <li>180 proprietary trade secrets</li>
+          <li>Biometric AI + spoof detection</li>
+          <li>Commercial license</li>
+          <li>ISO 20022 bridge</li>
+          <li>Priority founder support</li>
+          <li>Revenue share eligible (2%)</li>
+        </ul>
+        <button class="btn btn-primary" onclick="selectTier('tier_2_business', 500, 'Business')">
+          Begin Ring 3 →
+        </button>
+      </div>
+
+      <div class="tier-card">
+        <div class="tier-name">Enterprise</div>
+        <div class="tier-price">2,500 XRP · ~$5,000</div>
+        <ul class="tier-features">
+          <li>All 299 licensed secrets</li>
+          <li>DNA substrate encoding</li>
+          <li>Unlimited commercial use</li>
+          <li>Direct founder access</li>
+          <li>White-label licensing rights</li>
+          <li>Revenue share eligible (5%)</li>
+        </ul>
+        <button class="btn btn-ghost" onclick="selectTier('tier_3_enterprise', 2500, 'Enterprise')">
+          Begin Ring 3 →
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================================================================
+     DEV NET
+================================================================ -->
+<section id="devnet" style="background: var(--stone);">
+  <div class="section-inner">
+    <div class="reveal" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:2rem;">
+      <div>
+        <p class="section-label">Testing Environment</p>
+        <h2 class="section-title">XRPL <em>Dev Net</em></h2>
+        <p class="section-body" style="margin-bottom:2rem;">
+          Test the complete 7-ring Lemniscate Gate flow on XRPL Testnet.
+          Free test XRP, full system, zero financial risk. See it work before you commit.
+        </p>
+
+        <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:center;">
+          <span class="status-badge">
+            <span class="status-dot"></span>
+            XRPL Testnet · Live
+          </span>
+
+          <a href="https://xrpl.org/xrp-testnet-faucet.html"
+             target="_blank" rel="noopener noreferrer"
+             class="btn btn-xrp">
+            ◈ Get Free Testnet XRP ↗
+          </a>
+
+          <a href="https://testnet.xrpl.org"
+             target="_blank" rel="noopener noreferrer"
+             class="btn btn-ghost">
+            XRPL Explorer ↗
+          </a>
+        </div>
+      </div>
+
+      <div class="domains-tree" style="min-width:280px; max-width:400px; flex:1;">
+<span style="color:var(--gold); font-size:.8rem">$ deploy_testnet.sh</span>
+
+<span style="color:var(--xrp)">✓</span> PermissionedDomains created
+<span style="color:var(--xrp)">✓</span> Hook compiled → WASM
+<span style="color:var(--xrp)">✓</span> Hook deployed to testnet
+<span style="color:var(--xrp)">✓</span> 10 demo secrets uploaded
+<span style="color:var(--xrp)">✓</span> Discord bot online
+<span style="color:var(--xrp)">✓</span> End-to-end tests passed
+
+<span style="color:var(--gold)">→ Invite beta users</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ================================================================
+     FOOTER
+================================================================ -->
+<footer role="contentinfo">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">∞ ForeFathers DAO</div>
+      <p class="footer-tagline">The IP tokenization system that licenses itself. Built on XRPL PermissionedDomains.</p>
+    </div>
+
+    <div class="footer-links" role="navigation" aria-label="Footer navigation">
+      <a href="#portals">Portals</a>
+      <a href="#rings">7 Rings</a>
+      <a href="#domains">Domains</a>
+      <a href="#tiers">Licensing</a>
+      <a href="#devnet">Dev Net</a>
+      <a href="https://linkedin.com/company/forefathers-dao" target="_blank" rel="noopener">LinkedIn ↗</a>
+    </div>
+
+    <div class="footer-links">
+      <a href="/.netlify/functions/ping" target="_blank" rel="noopener">API Status</a>
+      <a href="/sitemap.xml">Sitemap</a>
+      <button onclick="openModal('payment-modal')" style="background:none;border:none;cursor:pointer;font-size:.72rem;color:var(--fog);text-align:left;padding:0;font-family:var(--font-mono);">Payment Portal</button>
+      <button onclick="openModal('members-modal')" style="background:none;border:none;cursor:pointer;font-size:.72rem;color:var(--fog);text-align:left;padding:0;font-family:var(--font-mono);">Members Only</button>
+    </div>
+
+    <div class="footer-legal">
+      © 2026 ForeFathers DAO · Wyoming LLC ·
+      US Patents 11,XXX,XXX, 11,XXX,XXX · Patents Pending ·
+      303 Trade Secrets Protected by XRPL PermissionedDomains
+    </div>
+  </div>
+</footer>
+
+<!-- ================================================================
+     PAYMENT PORTAL MODAL
+================================================================ -->
+<div class="modal-overlay" id="payment-modal" role="dialog" aria-modal="true" aria-labelledby="pm-title" onclick="closeOnOverlay(event, 'payment-modal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('payment-modal')" aria-label="Close payment portal">✕</button>
+
+    <h2 class="modal-title" id="pm-title">Payment Portal</h2>
+    <p class="modal-sub">Direct XRP · No Stripe · No banks · Escrow-protected</p>
+
+    <!-- Tier selector -->
+    <div style="display:flex; gap:.75rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+      <button class="btn btn-ghost" id="t1-btn" onclick="selectTier('tier_1_individual',100,'Individual')" style="font-size:.65rem; padding:.45rem .9rem;">
+        Tier 1 · 100 XRP
+      </button>
+      <button class="btn btn-primary" id="t2-btn" onclick="selectTier('tier_2_business',500,'Business')" style="font-size:.65rem; padding:.45rem .9rem;">
+        Tier 2 · 500 XRP
+      </button>
+      <button class="btn btn-ghost" id="t3-btn" onclick="selectTier('tier_3_enterprise',2500,'Enterprise')" style="font-size:.65rem; padding:.45rem .9rem;">
+        Tier 3 · 2,500 XRP
+      </button>
+    </div>
+
+    <div class="modal-xrp-amount" id="pm-amount">500 XRP</div>
+    <p style="font-size:.7rem; color:var(--fog); margin-bottom:.75rem;" id="pm-tier-label">Business Tier · ~$1,000</p>
+
+    <p style="font-size:.72rem; color:var(--silver); margin-bottom:.4rem;">Send exact amount to:</p>
+    <div class="modal-wallet-field" id="pm-wallet" onclick="copyWallet()" title="Click to copy" tabindex="0" role="button" aria-label="DAO wallet address — click to copy">
+      <!-- Populated by JS from env / serverless function -->
+      rLoadingWalletAddress...
+    </div>
+
+    <div class="modal-memo" id="pm-memo">
+      Memo Type: PAYMENT<br />
+      Memo Data: {"tier":"tier_2_business","discord_id":"YOUR_DISCORD_ID"}
+    </div>
+
+    <div class="modal-info">
+      ⚡ Your payment is held in a XRPL PermissionedDomain escrow until 2-of-3 founders approve.
+      Complete Ring 2 (NDA) on Discord first — then send payment here.
+      Your Ring 3 completes automatically when the transaction confirms.
+    </div>
+
+    <a href="https://discord.gg/forefathers-dao"
+       target="_blank" rel="noopener noreferrer"
+       class="btn btn-ghost" style="width:100%; justify-content:center;">
+      Join Discord to start Ring 1 ↗
+    </a>
+  </div>
+</div>
+
+<!-- ================================================================
+     MEMBERS ONLY MODAL
+================================================================ -->
+<div class="modal-overlay" id="members-modal" role="dialog" aria-modal="true" aria-labelledby="mm-title" onclick="closeOnOverlay(event, 'members-modal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('members-modal')" aria-label="Close members area">✕</button>
+
+    <h2 class="modal-title" id="mm-title">Members Only</h2>
+    <p class="modal-sub">Complete the 7 Rings to access THE-CODE and your trade secrets.</p>
+
+    <!-- Wallet-gated: show content if wallet connected + NFT detected -->
+    <div id="members-locked" class="members-steps">
+      <div class="members-step">
+        <div class="step-num">1</div>
+        <div class="step-info">
+          <div class="step-title">Connect Your Wallet</div>
+          <div class="step-desc">Link the XRPL wallet that holds your License NFT.</div>
+        </div>
+      </div>
+      <div class="members-step">
+        <div class="step-num">2</div>
+        <div class="step-info">
+          <div class="step-title">Verify License NFT</div>
+          <div class="step-desc">We check your wallet for a valid ForeFathers DAO license NFT on-ledger.</div>
+        </div>
+      </div>
+      <div class="members-step">
+        <div class="step-num">3</div>
+        <div class="step-info">
+          <div class="step-title">Access Your Tier</div>
+          <div class="step-desc">PermissionedDomains unlock your licensed secrets automatically.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="members-unlocked" style="display:none;">
+      <div class="status-badge" style="margin-bottom:1rem;">
+        <span class="status-dot"></span>
+        License Verified · <span id="member-tier">Tier 2 Business</span>
+      </div>
+      <a href="#" class="btn btn-primary" style="width:100%; justify-content:center; margin-bottom:.75rem;" id="download-btn">
+        ↓ Download THE-CODE Package
+      </a>
+      <a href="https://discord.gg/forefathers-dao" target="_blank" rel="noopener noreferrer"
+         class="btn btn-ghost" style="width:100%; justify-content:center;">
+        Open Discord Members Area ↗
+      </a>
+    </div>
+
+    <div style="margin-top:1.5rem; border-top:1px solid rgba(255,255,255,.05); padding-top:1.25rem;">
+      <button class="btn btn-xrp" onclick="connectWallet(); closeModal('members-modal');" style="width:100%; justify-content:center; margin-bottom:.75rem;">
+        ◈ Connect Wallet to Verify
+      </button>
+      <a id="discord-login-btn"
+         href="#"
+         onclick="loginWithDiscord(); return false;"
+         class="btn"
+         style="width:100%; justify-content:center; background:#5865F2; color:#fff; border:none;">
+        🎮 Sign in with Discord
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     DOMAINS MODAL
+================================================================ -->
+<div class="modal-overlay" id="domains-modal" role="dialog" aria-modal="true" aria-labelledby="dm-title" onclick="closeOnOverlay(event, 'domains-modal')">
+  <div class="modal" style="max-width:560px;">
+    <button class="modal-close" onclick="closeModal('domains-modal')" aria-label="Close domains panel">✕</button>
+
+    <h2 class="modal-title" id="dm-title">Your Domain Access</h2>
+    <p class="modal-sub" id="dm-sub">Connect wallet to query your PermissionedDomain permissions.</p>
+
+    <div id="domain-connected" style="display:none;">
+      <div class="status-badge" style="margin-bottom:1rem;">
+        <span class="status-dot"></span>
+        <span id="dm-wallet-short">rXXX...XXXX</span>
+      </div>
+      <div class="domains-tree" id="dm-tree" style="margin-top:1rem; font-size:.68rem; line-height:1.9;">
+        Loading permissions...
+      </div>
+    </div>
+
+    <div id="domain-disconnected">
+      <div class="domains-tree" style="margin:1.5rem 0;">
+<span style="color:var(--fog)">$ query_permissions --account [connect wallet]</span>
+
+<span style="color:var(--fog)">Waiting for wallet connection...</span>
+<span style="color:var(--gold)">→</span> Connect wallet to see your access
+      </div>
+      <button class="btn btn-xrp" onclick="connectWallet()" style="width:100%; justify-content:center;">
+        ◈ Connect Wallet
+      </button>
+    </div>
+
+    <div style="margin-top:1.5rem; display:flex; flex-wrap:wrap; gap:.6rem; align-items:center;">
+      <!-- Direct PermissionedDomain link — populated once PERMISSIONED_DOMAIN env is set -->
+      <a id="dm-direct-link"
+         href="#"
+         target="_blank" rel="noopener noreferrer"
+         class="btn btn-xrp"
+         style="font-size:.65rem; display:none;">
+        ⬡ Open My Domain ↗
+      </a>
+      <a id="dm-explorer-link"
+         href="https://testnet.xrpl.org"
+         target="_blank" rel="noopener noreferrer"
+         class="btn btn-ghost" style="font-size:.65rem;">
+        View on XRPL Explorer ↗
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Copy Toast -->
+<div class="copy-toast" id="copy-toast" role="status" aria-live="polite">Copied to clipboard</div>
+
+<!-- ================================================================
+     JAVASCRIPT — All open-ended, ready to wire up
+================================================================ -->
+<script>
+/* ================================================================
+   CONFIG — populated from Netlify environment or serverless fn
+================================================================ */
+const CONFIG = {
+  // ── Populated at runtime by /.netlify/functions/config ───────────
+  // Set these keys in Netlify UI → Environment Variables.
+  // The frontend never touches secret keys (seeds, bot tokens).
+  DAO_WALLET:       window.__FF_DAO_WALLET__       || 'rDAOWalletAddressHere',
+  DISCORD_INVITE:   window.__FF_DISCORD_INVITE__   || 'https://discord.gg/forefathers-dao',
+  DISCORD_GUILD_ID: window.__FF_DISCORD_GUILD_ID__ || '',
+  DISCORD_CLIENT_ID:window.__FF_DISCORD_CLIENT_ID__|| '', // set in Netlify env → exposed safely
+  XRPL_NETWORK:     window.__FF_XRPL_NETWORK__     || 'testnet',
+  XRPL_WSS: (window.__FF_XRPL_NETWORK__ === 'mainnet')
+    ? 'wss://xrplcluster.com'
+    : 'wss://s.altnet.rippletest.net:51233',
+  DOWNLOAD_URL:        window.__FF_DOWNLOAD_URL__        || '#',
+  // PermissionedDomain — set PERMISSIONED_DOMAIN_ID in Netlify env.
+  // When blank the link falls back to XRPL Explorer domain search.
+  PERMISSIONED_DOMAIN: window.__FF_PERMISSIONED_DOMAIN__ || '',
+};
+
+/* ================================================================
+   STATE
+================================================================ */
+const state = {
+  walletConnected: false,
+  walletAddress: null,
+  licenseNFT: null,
+  licenseTier: null,
+  selectedTier: 'tier_2_business',
+  selectedAmount: 500,
+  selectedTierName: 'Business',
+  domainReady: false, // flips true when PERMISSIONED_DOMAIN is set
+};
+
+/* ================================================================
+   NAV — hamburger toggle
+================================================================ */
+function toggleMenu() {
+  const links = document.getElementById('nav-links');
+  const btn   = document.getElementById('hamburger');
+  const open  = links.classList.toggle('open');
+  btn.setAttribute('aria-expanded', open);
+}
+
+/* Close nav on link click */
+document.getElementById('nav-links').querySelectorAll('a, button').forEach(el => {
+  el.addEventListener('click', () => {
+    document.getElementById('nav-links').classList.remove('open');
+    document.getElementById('hamburger').setAttribute('aria-expanded', false);
+  });
+});
+
+/* ================================================================
+   MODAL SYSTEM
+================================================================ */
+function openModal(id) {
+  const overlay = document.getElementById(id);
+  if (!overlay) return;
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  // Focus first focusable inside
+  setTimeout(() => {
+    const focusable = overlay.querySelector('button, a, input');
+    if (focusable) focusable.focus();
+  }, 100);
+}
+
+function closeModal(id) {
+  const overlay = document.getElementById(id);
+  if (!overlay) return;
+  overlay.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function closeOnOverlay(event, id) {
+  if (event.target === document.getElementById(id)) closeModal(id);
+}
+
+// ESC key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.active').forEach(el => {
+      closeModal(el.id);
+    });
+  }
+});
+
+/* ================================================================
+   TIER SELECTION
+================================================================ */
+function selectTier(tier, amount, name) {
+  state.selectedTier = tier;
+  state.selectedAmount = amount;
+  state.selectedTierName = name;
+
+  // Update payment modal
+  document.getElementById('pm-amount').textContent = `${amount.toLocaleString()} XRP`;
+  document.getElementById('pm-tier-label').textContent =
+    `${name} Tier · ~$${(amount * 2).toLocaleString()}`;
+
+  // Update memo
+  document.getElementById('pm-memo').innerHTML =
+    `Memo Type: PAYMENT<br />Memo Data: {"tier":"${tier}","discord_id":"YOUR_DISCORD_ID"}`;
+
+  openModal('payment-modal');
+}
+
+/* ================================================================
+   WALLET — open-ended for XUMM / GemWallet / CrossMark
+   Just wire up your preferred wallet SDK; state is ready
+================================================================ */
+async function connectWallet() {
+  /* ----------------------------------------------------------
+     OPEN-ENDED WALLET HOOK
+     Replace this block with your XUMM / GemWallet / Crossmark
+     SDK call. The state object + UI updaters below are ready.
+  ---------------------------------------------------------- */
+  if (state.walletConnected) {
+    disconnectWallet();
+    return;
+  }
+
+  try {
+    // ── XUMM example (uncomment after adding xumm-sdk) ──────
+    // const xumm = new Xumm(CONFIG.XUMM_API_KEY);
+    // const { me } = await xumm.authorize();
+    // state.walletAddress = me.account;
+
+    // ── GemWallet example (uncomment after adding gem-wallet) ─
+    // const { result } = await GemWallet.getAddress();
+    // state.walletAddress = result.address;
+
+    // ── CrossMark example ────────────────────────────────────
+    // const { response } = await sdk.signIn();
+    // state.walletAddress = response.data.address;
+
+    // ── PLACEHOLDER (remove when wallet SDK added) ────────────
+    const demo = prompt('Enter XRPL wallet address to demo (or cancel):');
+    if (!demo) return;
+    state.walletAddress = demo.trim();
+    // ─────────────────────────────────────────────────────────
+
+    state.walletConnected = true;
+    updateWalletUI();
+    await verifyLicense();
+
+  } catch (err) {
+    console.error('Wallet connect error:', err);
+  }
+}
+
+function disconnectWallet() {
+  state.walletConnected = false;
+  state.walletAddress   = null;
+  state.licenseNFT      = null;
+  state.licenseTier     = null;
+  updateWalletUI();
+}
+
+function updateWalletUI() {
+  const btn = document.getElementById('wallet-btn');
+  if (state.walletConnected && state.walletAddress) {
+    const short = `${state.walletAddress.slice(0,6)}…${state.walletAddress.slice(-4)}`;
+    btn.innerHTML = `<span class="wallet-dot"></span>${short}`;
+    btn.classList.add('connected');
+    updateDomainsModal();
+  } else {
+    btn.innerHTML = 'Connect Wallet';
+    btn.classList.remove('connected');
+  }
+}
+
+/* ================================================================
+   LICENSE VERIFICATION
+   Calls /.netlify/functions/verify-license
+   Serverless fn checks XRPL for NFT ownership
+================================================================ */
+async function verifyLicense() {
+  if (!state.walletAddress) return;
+
+  try {
+    const res = await fetch('/.netlify/functions/verify-license', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account: state.walletAddress }),
+    });
+
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (data.verified) {
+      state.licenseNFT   = data.nft_id;
+      state.licenseTier  = data.tier;
+      updateMembersModal(data);
+      updateDomainsModal(data);
+    }
+  } catch (err) {
+    console.warn('License verify (offline):', err);
+    // Graceful — don't break UX if serverless is unavailable
+  }
+}
+
+function updateMembersModal(data) {
+  if (!data || !data.verified) return;
+  document.getElementById('members-locked').style.display = 'none';
+  document.getElementById('members-unlocked').style.display = 'block';
+  document.getElementById('member-tier').textContent = data.tier_name || state.licenseTier;
+  if (data.download_url) {
+    document.getElementById('download-btn').href = data.download_url;
+  }
+}
+
+function updateDomainsModal(data) {
+  if (!state.walletConnected) return;
+  document.getElementById('domain-disconnected').style.display = 'none';
+  document.getElementById('domain-connected').style.display = 'block';
+
+  const short = `${state.walletAddress.slice(0,8)}…${state.walletAddress.slice(-6)}`;
+  document.getElementById('dm-wallet-short').textContent = short;
+
+  const tree = document.getElementById('dm-tree');
+  if (data && data.accessible_secrets) {
+    const count = data.accessible_secrets.length;
+    tree.innerHTML = `
+<span style="color:var(--gold)">✓</span> Account: ${short}
+<span style="color:var(--gold)">✓</span> License: ${data.tier_name || 'Verified'}
+<span style="color:var(--gold)">✓</span> NFT: ${(data.nft_id || '').slice(0,20)}...
+<span style="color:var(--xrp)">◈</span> Accessible Secrets: ${count}
+
+<span style="color:var(--silver)">forefathers.dao/secrets/*</span>
+${data.accessible_secrets.slice(0, 8).map(s =>
+  `<span style="color:var(--fog)">  ├── </span><span style="color:var(--xrp)">${s}</span>`
+).join('\n')}
+${count > 8 ? `<span style="color:var(--fog)">  └── … and ${count - 8} more</span>` : ''}`;
+  } else {
+    tree.innerHTML = `
+<span style="color:var(--gold)">✓</span> Connected: ${short}
+<span style="color:var(--fog)">↻</span> Checking PermissionedDomain...
+<span style="color:var(--fog)">  No license NFT found on this wallet.</span>
+<span style="color:var(--gold)">→</span> Complete the 7 Rings to get access.`;
+  }
+}
+
+/* ================================================================
+   DISCORD OAUTH — open-ended, fires when you add CLIENT_ID env var
+================================================================ */
+function loginWithDiscord() {
+  if (!CONFIG.DISCORD_CLIENT_ID) {
+    // CLIENT_ID not yet set — send them to the server invite instead
+    window.open(CONFIG.DISCORD_INVITE, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
+  // Build Discord OAuth2 URL
+  const params = new URLSearchParams({
+    client_id:     CONFIG.DISCORD_CLIENT_ID,
+    redirect_uri:  `${window.location.origin}/auth/discord/callback`,
+    response_type: 'code',
+    scope:         'identify guilds',
+    // state can carry a CSRF token — extend here as needed
+    state:         btoa(JSON.stringify({ ts: Date.now(), tier: state.selectedTier })),
+  });
+
+  window.location.href = `https://discord.com/api/oauth2/authorize?${params}`;
+}
+
+// Handle Discord OAuth return (/?discord_id=...&auth=success)
+function handleDiscordCallback() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('auth') === 'success') {
+    const discordId = params.get('discord_id');
+    const isMember  = params.get('member') === 'true';
+
+    if (discordId) {
+      state.discordId     = discordId;
+      state.discordMember = isMember;
+
+      // Show members modal auto if they just came back from Discord
+      openModal('members-modal');
+
+      // If wallet already connected, re-verify with discord context
+      if (state.walletAddress) verifyLicense();
+    }
+
+    // Clean URL without reloading
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+
+/* ================================================================
+   PAYMENT PORTAL — wallet address
+================================================================ */
+async function loadDAOWallet() {
+  try {
+    const res = await fetch('/.netlify/functions/config');
+    if (!res.ok) throw new Error();
+    const cfg = await res.json();
+
+    // DAO wallet address
+    if (cfg.dao_wallet) {
+      CONFIG.DAO_WALLET = cfg.dao_wallet;
+      document.getElementById('pm-wallet').textContent = cfg.dao_wallet;
+    }
+
+    // Discord invite — update all Discord links dynamically
+    if (cfg.discord_invite) {
+      CONFIG.DISCORD_INVITE = cfg.discord_invite;
+      document.getElementById('discord-nav-link').href = cfg.discord_invite;
+      // Also update domain bar discord tab
+      const dsDiscordTab = document.getElementById('ds-discord-tab');
+      if (dsDiscordTab) dsDiscordTab.href = cfg.discord_invite;
+    }
+
+    // Discord Client ID (safe to expose — it's a public ID, not a secret)
+    if (cfg.discord_client_id) {
+      CONFIG.DISCORD_CLIENT_ID = cfg.discord_client_id;
+    }
+
+    // PermissionedDomain — activate direct link if domain ID is set
+    if (cfg.permissioned_domain) {
+      CONFIG.PERMISSIONED_DOMAIN = cfg.permissioned_domain;
+      activateDomainLink(cfg.permissioned_domain);
+    }
+
+  } catch {
+    // Fallback — already set from CONFIG defaults
+    document.getElementById('pm-wallet').textContent = CONFIG.DAO_WALLET;
+  }
+}
+
+/* ================================================================
+   PERMISSIONED DOMAIN — direct link handler
+   Opens the domain directly if configured, else opens modal.
+================================================================ */
+/* ================================================================
+   DOMAIN BAR — tab click handlers
+================================================================ */
+function openPermissionedDomainTab(e) {
+  if (CONFIG.PERMISSIONED_DOMAIN && state.domainReady) {
+    // Domain is live — open it directly (let default href handle it)
+    return true;
+  }
+  // Not yet configured — open the info modal instead
+  e.preventDefault();
+  openModal('domains-modal');
+}
+
+function openDomainsPortal() {
+  if (CONFIG.PERMISSIONED_DOMAIN && state.domainReady) {
+    window.open(buildDomainExplorerUrl(CONFIG.PERMISSIONED_DOMAIN), '_blank', 'noopener,noreferrer');
+  } else {
+    openModal('domains-modal');
+  }
+}
+
+function buildDomainExplorerUrl(domainId) {
+  // XRPL explorer URL for a PermissionedDomain object
+  const network = CONFIG.XRPL_NETWORK === 'mainnet' ? 'livenet' : 'testnet';
+  const base    = network === 'livenet'
+    ? 'https://livenet.xrpl.org'
+    : 'https://testnet.xrpl.org';
+  // PermissionedDomain objects are queryable by their domain ID or owner
+  return `${base}/domains/${domainId}`;
+}
+
+function activateDomainLink(domainId) {
+  if (!domainId) return;
+  state.domainReady = true;
+  const url = buildDomainExplorerUrl(domainId);
+
+  // ── Domain bar tab: go live ───────────────────────────────────
+  const dsTab    = document.getElementById('ds-domain-tab');
+  const dsLabel  = document.getElementById('ds-domain-label');
+  const dsStatus = document.getElementById('ds-domain-status');
+  if (dsTab) {
+    dsTab.href  = url;
+    dsTab.title = 'forefathers.dao on XRPL Explorer';
+  }
+  if (dsLabel) dsLabel.textContent = 'xrpl://forefathers.dao';
+  if (dsStatus) {
+    dsStatus.classList.remove('pending');
+    dsStatus.classList.add('live');
+    dsStatus.title = 'Live on XRPL';
+  }
+
+  // Portal card — show live badge + update tooltip
+  document.getElementById('domain-direct-link').style.display = 'block';
+  document.getElementById('domain-direct-url').textContent = 'forefathers.dao';
+  const card = document.getElementById('domain-portal-card');
+  card.title = `Click to open forefathers.dao on XRPL Explorer`;
+
+  // Modal direct link button
+  const dmLink = document.getElementById('dm-direct-link');
+  dmLink.href    = url;
+  dmLink.style.display = 'inline-flex';
+
+  // Explorer link — also switch to right network
+  document.getElementById('dm-explorer-link').href =
+    CONFIG.XRPL_NETWORK === 'mainnet'
+      ? 'https://livenet.xrpl.org'
+      : 'https://testnet.xrpl.org';
+}
+
+function copyWallet() {
+  const addr = CONFIG.DAO_WALLET;
+  navigator.clipboard.writeText(addr).then(() => {
+    const toast = document.getElementById('copy-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  });
+}
+
+/* ================================================================
+   SCROLL REVEAL
+================================================================ */
+const observer = new IntersectionObserver(
+  entries => entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  }),
+  { threshold: 0.12 }
+);
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+/* ================================================================
+   HERO BG PARALLAX  +  loaded class
+================================================================ */
+window.addEventListener('scroll', () => {
+  const bg = document.getElementById('hero-bg');
+  if (!bg) return;
+  const offset = window.scrollY * 0.3;
+  bg.style.transform = `scale(1) translateY(${offset}px)`;
+}, { passive: true });
+
+window.addEventListener('load', () => {
+  document.getElementById('hero-bg').classList.add('loaded');
+  loadDAOWallet();
+  handleDiscordCallback(); // handle Discord OAuth return
+});
+
+/* ================================================================
+   NAV scroll style
+================================================================ */
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('main-nav');
+  if (window.scrollY > 60) {
+    nav.style.background = 'rgba(12,12,14,.97)';
+  } else {
+    nav.style.background = 'rgba(12,12,14,.85)';
+  }
+}, { passive: true });
+</script>
+</body>
+</html>
