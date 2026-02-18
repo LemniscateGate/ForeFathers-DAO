@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ForeFathers DAO — IP Tokenization on XRPL</title>
+  <meta name="description" content="The IP tokenization system that licenses itself. Protect, tokenize, and monetize intellectual property on XRPL with PermissionedDomains." />
+  <meta property="og:title" content="ForeFathers DAO — IP Tokenization on XRPL" />
+  <meta property="og:description" content="The IP tokenization system that licenses itself." />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ================================================================
+       DESIGN TOKENS
+    ================================================================ */
+    :root {
+      --ink:     #0c0c0e;
+      --stone:   #1a1a1f;
+      --slate:   #2a2a35;
+      --fog:     #6b6b80;
+      --silver:  #b8b8cc;
+      --ivory:   #f0ede8;
+      --gold:    #c9a84c;
+      --gold-lt: #e8cc7a;
+      --xrp:     #00b4d8;
+      --xrp-dk:  #0077a8;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-mono:    'DM Mono', 'Courier New', monospace;
+      --r-sm: 4px; --r-md: 8px; --r-lg: 16px;
+      --nav-h: 68px;
+      --domain-bar-h: 28px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+
+    body {
+      background: var(--ink);
+      color: var(--ivory);
+      font-family: var(--font-mono);
+      font-weight: 300;
+      line-height: 1.65;
+      overflow: hidden; /* key: no scroll, slides handle this */
+      cursor: default;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    ::selection { background: var(--gold); color: var(--ink); }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--ink); }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+    /* ================================================================
+       DOMAIN BAR
+    ================================================================ */
+    .domain-bar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 28px;
+      z-index: 901;
+      background: rgba(6,6,8,.97);
+      border-bottom: 1px solid rgba(201,168,76,.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .domain-bar-inner { display: flex; align-items: center; gap: 0; }
+    .domain-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      font-family: var(--font-mono);
+      font-size: .58rem;
+      font-weight: 400;
+      letter-spacing: .1em;
+      text-transform: lowercase;
+      color: var(--fog);
+      padding: 0 .85rem;
+      height: 28px;
+      border-right: 1px solid rgba(255,255,255,.05);
+      cursor: pointer;
+      text-decoration: none;
+      transition: color .2s, background .2s;
+      white-space: nowrap;
+      position: relative;
+    }
+    .domain-tab:first-child { border-left: 1px solid rgba(255,255,255,.05); }
+    .domain-tab:hover { color: var(--ivory); background: rgba(255,255,255,.04); }
+    .domain-tab.active { color: var(--gold); background: rgba(201,168,76,.06); }
+    .domain-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1.5px;
+      background: var(--gold);
+    }
+    .tab-icon { font-size: .7rem; opacity: .7; }
+    .tab-status { width: 4px; height: 4px; border-radius: 50%; background: var(--fog); flex-shrink: 0; }
+    .tab-status.live { background: #4ade80; box-shadow: 0 0 4px rgba(74,222,128,.6); animation: pulse 2.5s infinite; }
+    .tab-status.pending { background: var(--gold); opacity: .6; }
+    @media (max-width: 600px) { .domain-tab .tab-label { display: none; } .domain-tab { padding: 0 .6rem; } }
+
+    /* ================================================================
+       NAV
+    ================================================================ */
+    nav {
+      position: fixed;
+      top: 28px; left: 0; right: 0;
+      height: var(--nav-h);
+      z-index: 900;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2.5rem;
+      border-bottom: 1px solid rgba(201,168,76,.15);
+      backdrop-filter: blur(20px) saturate(1.2);
+      background: rgba(12,12,14,.85);
+      transition: background .3s;
+    }
+    .nav-brand {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      color: var(--ivory);
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .nav-brand .infinity { color: var(--gold); font-size: 1.7rem; line-height: 1; }
+    .nav-links { display: flex; align-items: center; gap: .25rem; }
+    .nav-links a, .nav-links button {
+      font-family: var(--font-mono);
+      font-size: .72rem; font-weight: 400;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--silver); background: none; border: none;
+      padding: .45rem .9rem; border-radius: var(--r-sm);
+      cursor: pointer; transition: color .2s, background .2s;
+    }
+    .nav-links a:hover, .nav-links button:hover { color: var(--ivory); background: rgba(255,255,255,.05); }
+    .btn-wallet {
+      font-family: var(--font-mono) !important; font-size: .72rem !important;
+      font-weight: 500 !important; letter-spacing: .12em !important;
+      text-transform: uppercase !important; color: var(--ink) !important;
+      background: var(--gold) !important; border: none !important;
+      padding: .48rem 1.1rem !important; border-radius: 100px !important;
+      cursor: pointer !important; transition: background .2s, transform .15s !important;
+    }
+    .btn-wallet:hover { background: var(--gold-lt) !important; transform: translateY(-1px) !important; }
+    .btn-wallet.connected { background: rgba(0,180,216,.15) !important; color: var(--xrp) !important; border: 1px solid var(--xrp) !important; }
+    .wallet-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--xrp); margin-right: .4rem; animation: pulse 2s infinite; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: .4rem; }
+    .hamburger span { display: block; width: 22px; height: 1.5px; background: var(--ivory); transition: all .3s; }
+
+    /* ================================================================
+       SLIDE SYSTEM — the core
+    ================================================================ */
+    .slides-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      /* All slides start invisible and offscreen */
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .0s;
+    }
+
+    /* Active slide */
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Entrance animation — slide content */
+    .slide.entering .slide-content {
+      animation: slideEnter .75s cubic-bezier(.22,.6,.36,1) forwards;
+    }
+
+    /* Exit animation */
+    .slide.exiting {
+      animation: slideExit .5s cubic-bezier(.22,.6,.36,1) forwards;
+    }
+
+    @keyframes slideEnter {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideExit {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    /* Each slide's background image */
+    .slide-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      filter: brightness(.28) saturate(.7);
+      transform: scale(1.04);
+      transition: transform 10s ease-out, filter 1s ease;
+    }
+
+    .slide.active .slide-bg {
+      transform: scale(1);
+      filter: brightness(.3) saturate(.8);
+    }
+
+    /* Overlays */
+    .slide-veil {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(12,12,14,.92) 0%, transparent 55%),
+        linear-gradient(to top, rgba(12,12,14,1) 0%, transparent 45%);
+    }
+
+    /* Gold accent stripe */
+    .slide-accent {
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px;
+      height: 55%;
+      background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+      margin-left: 2.5rem;
+    }
+
+    /* Slide content */
+    .slide-content {
+      position: relative;
+      z-index: 2;
+      padding: calc(var(--nav-h) + var(--domain-bar-h) + 4rem) 2.5rem 6rem;
+      max-width: 820px;
+      opacity: 0; /* will be set by animation */
+    }
+
+    .slide.active .slide-content {
+      opacity: 1;
+    }
+
+    .slide-eyebrow {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.5rem;
+    }
+
+    .slide-title {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 300;
+      line-height: 1.08;
+      letter-spacing: -.01em;
+      margin-bottom: 1.5rem;
+    }
+
+    .slide-title em { font-style: italic; color: var(--gold); }
+
+    .slide-body {
+      font-family: var(--font-mono);
+      font-size: .9rem;
+      font-weight: 300;
+      color: var(--silver);
+      line-height: 1.8;
+      max-width: 540px;
+      margin-bottom: 2.5rem;
+    }
+
+    .slide-cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    /* Page-specific content blocks */
+    .rings-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: .75rem;
+      max-width: 760px;
+      margin-bottom: 2rem;
+    }
+
+    .ring-mini {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(201,168,76,.12);
+      border-radius: var(--r-md);
+      padding: .9rem 1rem;
+      transition: background .2s;
+    }
+
+    .ring-mini:hover { background: rgba(201,168,76,.06); }
+
+    .ring-mini .num {
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      letter-spacing: .15em;
+      color: var(--gold);
+      opacity: .7;
+      margin-bottom: .25rem;
+    }
+
+    .ring-mini .name {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 400;
+    }
+
+    .ring-mini .desc {
+      font-size: .68rem;
+      color: var(--fog);
+      line-height: 1.5;
+      margin-top: .25rem;
+    }
+
+    /* Tier cards inline */
+    .tiers-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      max-width: 720px;
+      margin-bottom: 2rem;
+    }
+
+    .tier-inline {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--r-md);
+      padding: 1.25rem 1.5rem;
+      min-width: 180px;
+      flex: 1;
+      transition: all .2s;
+    }
+
+    .tier-inline:hover { border-color: rgba(201,168,76,.3); transform: translateY(-2px); }
+    .tier-inline.featured { border-color: rgba(201,168,76,.4); background: rgba(201,168,76,.05); }
+
+    .tier-inline .t-name {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 400;
+      margin-bottom: .15rem;
+    }
+
+    .tier-inline .t-price {
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      color: var(--gold);
+      margin-bottom: .75rem;
+    }
+
+    .tier-inline .t-note { font-size: .68rem; color: var(--fog); line-height: 1.5; }
+
+    /* Domain tree inline */
+    .domains-tree-inline {
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      background: rgba(0,0,0,.45);
+      border: 1px solid rgba(201,168,76,.12);
+      border-radius: var(--r-md);
+      padding: 1.5rem 2rem;
+      max-width: 600px;
+      line-height: 2;
+      overflow-x: auto;
+      margin-bottom: 2rem;
+    }
+
+    .tree-root  { color: var(--gold); }
+    .tree-branch { color: var(--silver); }
+    .tree-leaf   { color: var(--xrp); }
+    .tree-meta   { color: var(--fog); }
+
+    /* Portals inline */
+    .portals-inline {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: .75rem;
+      max-width: 700px;
+      margin-bottom: 2rem;
+    }
+
+    .portal-inline {
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: var(--r-md);
+      padding: 1rem 1.1rem;
+      cursor: pointer;
+      transition: all .22s;
+      text-decoration: none;
+      color: var(--ivory);
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+
+    .portal-inline:hover { border-color: rgba(201,168,76,.3); transform: translateY(-2px); }
+    .portal-inline .pi-icon { font-size: 1rem; flex-shrink: 0; }
+    .portal-inline .pi-label { font-family: var(--font-mono); font-size: .68rem; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
+
+    /* Rings badge (decorative side annotation) */
+    .rings-badge {
+      position: absolute;
+      bottom: 3rem;
+      right: 2.5rem;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: .4rem;
+    }
+
+    .ring-tag {
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      letter-spacing: .12em;
+      color: var(--fog);
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .ring-tag::before { content: ''; display: block; width: 20px; height: 1px; background: var(--gold); opacity: .4; }
+
+    /* ================================================================
+       NAVIGATION CONTROLS
+    ================================================================ */
+
+    /* Click hint — bottom center */
+    .click-hint {
+      position: fixed;
+      bottom: 2.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 800;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .4rem;
+      pointer-events: none;
+      transition: opacity .4s;
+    }
+
+    .click-hint.hidden { opacity: 0; }
+
+    .click-hint-text {
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--fog);
+    }
+
+    .click-hint-arrow {
+      width: 20px; height: 20px;
+      border-right: 1.5px solid var(--gold);
+      border-bottom: 1.5px solid var(--gold);
+      transform: rotate(45deg);
+      opacity: .5;
+      animation: bounceDown 1.8s ease-in-out infinite;
+    }
+
+    @keyframes bounceDown {
+      0%, 100% { transform: rotate(45deg) translateY(0); opacity: .5; }
+      50% { transform: rotate(45deg) translateY(4px); opacity: 1; }
+    }
+
+    /* Progress dots */
+    .slide-dots {
+      position: fixed;
+      right: 2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 800;
+      display: flex;
+      flex-direction: column;
+      gap: .55rem;
+      align-items: center;
+    }
+
+    .slide-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(240,237,232,.2);
+      cursor: pointer;
+      transition: all .3s;
+      border: 1px solid rgba(240,237,232,.1);
+    }
+
+    .slide-dot:hover { background: rgba(201,168,76,.5); transform: scale(1.3); }
+    .slide-dot.active { background: var(--gold); border-color: var(--gold); transform: scale(1.4); box-shadow: 0 0 8px rgba(201,168,76,.5); }
+
+    /* Slide counter */
+    .slide-counter {
+      position: fixed;
+      bottom: 2.2rem;
+      right: 2.5rem;
+      z-index: 800;
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      letter-spacing: .15em;
+      color: var(--fog);
+    }
+
+    .slide-counter span { color: var(--gold); }
+
+    /* Prev / Next arrow buttons */
+    .nav-arrow {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 800;
+      background: rgba(12,12,14,.6);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--silver);
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all .2s;
+      font-size: 1.1rem;
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-arrow:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,.08); }
+    .nav-arrow.prev { left: 1.5rem; }
+    .nav-arrow.next { right: 1.5rem; }
+    .nav-arrow:disabled { opacity: .2; cursor: default; }
+    .nav-arrow:disabled:hover { border-color: rgba(255,255,255,.08); color: var(--silver); background: rgba(12,12,14,.6); }
+
+    /* Keyboard hint */
+    .kbd-hint {
+      position: fixed;
+      bottom: 2.2rem;
+      left: 2.5rem;
+      z-index: 800;
+      display: flex;
+      gap: .5rem;
+      align-items: center;
+    }
+
+    .kbd {
+      font-family: var(--font-mono);
+      font-size: .55rem;
+      color: var(--fog);
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 3px;
+      padding: .2rem .45rem;
+      letter-spacing: .05em;
+    }
+
+    /* ================================================================
+       SHARED BUTTONS
+    ================================================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      font-weight: 400;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: .75rem 1.6rem;
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      transition: all .2s;
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-primary { background: var(--gold); color: var(--ink); }
+    .btn-primary:hover { background: var(--gold-lt); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,.3); }
+    .btn-ghost { background: transparent; color: var(--ivory); border: 1px solid rgba(240,237,232,.2); }
+    .btn-ghost:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
+    .btn-xrp { background: rgba(0,180,216,.1); color: var(--xrp); border: 1px solid rgba(0,180,216,.3); }
+    .btn-xrp:hover { background: rgba(0,180,216,.2); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,180,216,.15); }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .1em;
+      color: var(--xrp);
+      background: rgba(0,180,216,.08);
+      border: 1px solid rgba(0,180,216,.2);
+      border-radius: 100px;
+      padding: .3rem .9rem;
+    }
+
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--xrp); animation: pulse 2s infinite; }
+
+    /* ================================================================
+       MODALS
+    ================================================================ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0,0,0,.8);
+      backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: var(--stone);
+      border: 1px solid rgba(201,168,76,.2);
+      border-radius: var(--r-lg);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 480px;
+      position: relative;
+      animation: modalIn .3s ease-out;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(.95) translateY(16px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem; right: 1rem;
+      background: none; border: none;
+      color: var(--fog); font-size: 1.1rem;
+      cursor: pointer; padding: .25rem;
+      transition: color .2s;
+    }
+    .modal-close:hover { color: var(--ivory); }
+
+    .modal-title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; margin-bottom: .5rem; }
+    .modal-sub { font-size: .75rem; color: var(--fog); margin-bottom: 2rem; }
+    .modal-xrp-amount { font-family: var(--font-mono); font-size: 2rem; font-weight: 500; color: var(--gold); margin-bottom: .25rem; }
+
+    .modal-wallet-field {
+      background: rgba(0,0,0,.4);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--r-sm);
+      padding: .9rem 1rem;
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: var(--xrp);
+      word-break: break-all;
+      margin: 1rem 0;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+    .modal-wallet-field:hover { border-color: var(--xrp); }
+
+    .modal-memo {
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      color: var(--fog);
+      background: rgba(0,0,0,.3);
+      border: 1px solid rgba(255,255,255,.05);
+      border-radius: var(--r-sm);
+      padding: .75rem 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-info {
+      font-size: .72rem;
+      color: var(--silver);
+      line-height: 1.7;
+      background: rgba(0,180,216,.05);
+      border: 1px solid rgba(0,180,216,.15);
+      border-radius: var(--r-sm);
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .copy-toast {
+      position: fixed;
+      bottom: 2rem; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--gold); color: var(--ink);
+      font-family: var(--font-mono); font-size: .72rem;
+      letter-spacing: .1em;
+      padding: .6rem 1.4rem; border-radius: 100px;
+      pointer-events: none;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+      z-index: 2000;
+    }
+    .copy-toast.show { transform: translateX(-50%) translateY(0); }
+
+    .members-steps { display: flex; flex-direction: column; gap: 1rem; margin: 1.5rem 0; }
+    .members-step { display: flex; gap: 1rem; align-items: flex-start; }
+    .step-num {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(201,168,76,.15); border: 1px solid rgba(201,168,76,.3);
+      color: var(--gold); font-family: var(--font-mono); font-size: .65rem; font-weight: 500;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step-info { flex: 1; }
+    .step-title { font-size: .8rem; font-weight: 500; margin-bottom: .2rem; }
+    .step-desc { font-size: .72rem; color: var(--fog); line-height: 1.5; }
+
+    /* ================================================================
+       ANIMATIONS
+    ================================================================ */
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Staggered slide content animations */
+    .slide.entering .slide-eyebrow  { animation: fadeUp .6s .1s both; }
+    .slide.entering .slide-title    { animation: fadeUp .7s .2s both; }
+    .slide.entering .slide-body     { animation: fadeUp .7s .35s both; }
+    .slide.entering .slide-cta-row  { animation: fadeUp .7s .5s both; }
+    .slide.entering .rings-mini-grid{ animation: fadeUp .7s .45s both; }
+    .slide.entering .tiers-inline   { animation: fadeUp .7s .45s both; }
+    .slide.entering .domains-tree-inline { animation: fadeUp .7s .4s both; }
+    .slide.entering .portals-inline { animation: fadeUp .7s .45s both; }
+    .slide.entering .status-badge   { animation: fadeUp .7s .5s both; }
+    .slide.entering .rings-badge    { animation: fadeUp .7s .6s both; }
+
+    /* ================================================================
+       MOBILE
+    ================================================================ */
+    @media (max-width: 768px) {
+      nav { padding: 0 1.25rem; }
+      .nav-links {
+        display: none;
+        position: fixed;
+        top: calc(var(--nav-h) + var(--domain-bar-h));
+        left: 0; right: 0;
+        background: var(--stone);
+        flex-direction: column;
+        padding: 1.5rem; gap: .5rem;
+        border-bottom: 1px solid rgba(201,168,76,.1);
+        z-index: 899;
+      }
+      .nav-links.open { display: flex; }
+      .nav-links a, .nav-links button { width: 100%; text-align: left; padding: .7rem 1rem; }
+      .hamburger { display: flex; }
+      .rings-badge { display: none; }
+      .slide-content { padding-left: 1.25rem; padding-right: 1.25rem; }
+      .nav-arrow.prev { left: .5rem; }
+      .nav-arrow.next { right: .5rem; }
+      .kbd-hint { display: none; }
+      .slide-dots { right: .75rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ================================================================
+     DOMAIN SWITCHER BAR
+================================================================ -->
+<div class="domain-bar" role="navigation" aria-label="Switch between ForeFathers domains">
+  <div class="domain-bar-inner">
+    <a href="/" class="domain-tab active" title="forefathers.dao (Web3)">
+      <span class="tab-icon">⬡</span>
+      <span class="tab-label">forefathers.dao</span>
+      <span class="tab-status live"></span>
+    </a>
+    <a id="ds-discord-tab" href="https://discord.gg/forefathers-dao" target="_blank" rel="noopener" class="domain-tab">
+      <span class="tab-icon">🎮</span>
+      <span class="tab-label">discord.gg/forefathers</span>
+      <span class="tab-status live"></span>
+    </a>
+    <a id="ds-domain-tab" href="#" onclick="openPermissionedDomainTab(event)" class="domain-tab">
+      <span class="tab-icon">◈</span>
+      <span class="tab-label" id="ds-domain-label">xrpl://forefathers.dao</span>
+      <span class="tab-status pending" id="ds-domain-status"></span>
+    </a>
+    <a href="https://linkedin.com/company/forefathers-dao" target="_blank" rel="noopener" class="domain-tab">
+      <span class="tab-icon" style="font-style:normal">in</span>
+      <span class="tab-label">linkedin</span>
+    </a>
+  </div>
+</div>
+
+<!-- ================================================================
+     NAV
+================================================================ -->
+<nav id="main-nav">
+  <a href="/" class="nav-brand">
+    <span class="infinity">∞</span>
+    ForeFathers DAO
+  </a>
+
+  <div class="nav-links" id="nav-links">
+    <!-- Slide jump links -->
+    <button onclick="goToSlide(1)">Portals</button>
+    <button onclick="goToSlide(2)">7 Rings</button>
+    <button onclick="goToSlide(3)">Licensing</button>
+    <button onclick="goToSlide(4)">Domains</button>
+    <button onclick="openModal('payment-modal')">Payment Portal</button>
+    <button onclick="openModal('members-modal')">Members Only</button>
+    <a href="https://linkedin.com/company/forefathers-dao" target="_blank" rel="noopener">LinkedIn ↗</a>
+    <a id="discord-nav-link" href="https://discord.gg/forefathers-dao" target="_blank" rel="noopener" style="color:#5865F2!important">Discord ↗</a>
+    <button class="btn-wallet" id="wallet-btn" onclick="connectWallet()">Connect Wallet</button>
+  </div>
+
+  <button class="hamburger" id="hamburger" aria-expanded="false" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ================================================================
+     SLIDES CONTAINER
+================================================================ -->
+<div class="slides-container" id="slides-container">
+
+  <!-- ── SLIDE 1: Hero / Landing ─────────────────────────────── -->
+  <div class="slide active entering" data-slide="0" id="slide-0">
+    <div class="slide-bg" style="background-image:url('https://images.pexels.com/photos/4227153/pexels-photo-4227153.jpeg');background-position:center 30%;"></div>
+    <div class="slide-veil"></div>
+    <div class="slide-accent"></div>
+
+    <div class="slide-content">
+      <p class="slide-eyebrow">ForeFathers DAO · XRPL PermissionedDomains</p>
+      <h1 class="slide-title">
+        The IP system<br />
+        that <em>licenses itself</em>
+      </h1>
+      <p class="slide-body">
+        Tokenize patents, trade secrets, and intellectual property on XRPL.
+        Ledger-enforced access control. No intermediaries. Yours forever.
+      </p>
+      <div class="slide-cta-row">
+        <button class="btn btn-primary" onclick="openModal('payment-modal')">Enter the Gate →</button>
+        <button class="btn btn-ghost" onclick="goToSlide(2)">The 7 Rings</button>
+        <button class="btn btn-xrp" onclick="goToSlide(5)">◈ Dev Net</button>
+      </div>
+    </div>
+
+    <div class="rings-badge">
+      <span class="ring-tag">Ring 1 — Identity</span>
+      <span class="ring-tag">Ring 2 — NDA</span>
+      <span class="ring-tag">Ring 3 — Escrow</span>
+      <span class="ring-tag">Ring 4 — Approval</span>
+      <span class="ring-tag">Ring 5 — License NFT</span>
+      <span class="ring-tag">Ring 6 — THE-CODE</span>
+      <span class="ring-tag">Ring 7 — Community</span>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 2: Portals ─────────────────────────────────────── -->
+  <div class="slide" data-slide="1" id="slide-1">
+    <div class="slide-bg" style="background-image:url('https://images.pexels.com/photos/31350302/pexels-photo-31350302/free-photo-of-majestic-view-of-lower-yellowstone-falls.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2');background-position:center 40%;"></div>
+    <div class="slide-veil"></div>
+    <div class="slide-accent"></div>
+
+    <div class="slide-content">
+      <p class="slide-eyebrow">Quick Access · Your Portals</p>
+      <h2 class="slide-title">
+        One click<br/>
+        <em>anywhere</em>
+      </h2>
+      <p class="slide-body">
+        Fully decentralized — no Stripe, no third-party rails.
+        Payments settle directly on XRPL.
+      </p>
+
+      <div class="portals-inline">
+        <div class="portal-inline" onclick="connectWallet()">
+          <span class="pi-icon">🔑</span>
+          <span class="pi-label">Connect Wallet</span>
+        </div>
+        <div class="portal-inline" onclick="openModal('payment-modal')">
+          <span class="pi-icon">◈</span>
+          <span class="pi-label">Payment Portal</span>
+        </div>
+        <div class="portal-inline" onclick="openModal('members-modal')">
+          <span class="pi-icon">🏛</span>
+          <span class="pi-label">Members Only</span>
+        </div>
+        <div class="portal-inline" onclick="openDomainsPortal()">
+          <span class="pi-icon">⬡</span>
+          <span class="pi-label">Permissioned Domain</span>
+        </div>
+        <a class="portal-inline" href="https://linkedin.com/company/forefathers-dao" target="_blank" rel="noopener">
+          <span class="pi-icon" style="font-style:normal;font-weight:500">in</span>
+          <span class="pi-label">LinkedIn</span>
+        </a>
+        <a class="portal-inline" onclick="goToSlide(5)">
+          <span class="pi-icon">🛠</span>
+          <span class="pi-label">Dev Net</span>
+        </a>
+      </div>
+
+      <div class="slide-cta-row">
+        <button class="btn btn-primary" onclick="openModal('payment-modal')">Open Payment Portal →</button>
+        <button class="btn btn-ghost" onclick="nextSlide()">See the 7 Rings →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 3: The 7 Rings ─────────────────────────────────── -->
+  <div class="slide" data-slide="2" id="slide-2">
+    <div class="slide-bg" style="background-image:url('https://media.istockphoto.com/id/1381424521/photo/herd-of-american-bison-yellowstone-national-park-winter-scene.jpg?b=1&s=612x612&w=0&k=20&c=YdeW-mWVpY3vhxKVNfG4Yxr7dtZaE1D1n2mwWigr6dU=');background-position:center 50%;"></div>
+    <div class="slide-veil"></div>
+    <div class="slide-accent"></div>
+
+    <div class="slide-content">
+      <p class="slide-eyebrow">The Onboarding · Lemniscate Gate</p>
+      <h2 class="slide-title">
+        Seven <em>Rings</em><br/>
+        of Access
+      </h2>
+      <p class="slide-body">
+        By the time you complete the final ring, you've already seen the
+        system work — on-ledger, immutable, yours.
+      </p>
+
+      <div class="rings-mini-grid">
+        <div class="ring-mini"><div class="num">Ring 01</div><div class="name">Identity</div><div class="desc">Biometric verification via Wick</div></div>
+        <div class="ring-mini"><div class="num">Ring 02</div><div class="name">NDA</div><div class="desc">Signed agreement stored on XRPL</div></div>
+        <div class="ring-mini"><div class="num">Ring 03</div><div class="name">Escrow</div><div class="desc">License fee held pending approval</div></div>
+        <div class="ring-mini"><div class="num">Ring 04</div><div class="name">Approval</div><div class="desc">2-of-3 founder multi-signature</div></div>
+        <div class="ring-mini"><div class="num">Ring 05</div><div class="name">License NFT</div><div class="desc">NFT minted, domain access granted</div></div>
+        <div class="ring-mini"><div class="num">Ring 06</div><div class="name">THE-CODE</div><div class="desc">300+ trade secrets unlocked</div></div>
+        <div class="ring-mini"><div class="num">Ring 07</div><div class="name">Community</div><div class="desc">Discord access + revenue share</div></div>
+      </div>
+
+      <div class="slide-cta-row">
+        <button class="btn btn-primary" onclick="openModal('payment-modal')">Begin Ring 3 →</button>
+        <button class="btn btn-ghost" onclick="nextSlide()">View Pricing →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 4: Licensing / Tiers ───────────────────────────── -->
+  <div class="slide" data-slide="3" id="slide-3">
+    <div class="slide-bg" style="background-image:url('https://images.pexels.com/photos/8710594/pexels-photo-8710594.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2');background-position:center 50%;"></div>
+    <div class="slide-veil"></div>
+    <div class="slide-accent"></div>
+
+    <div class="slide-content">
+      <p class="slide-eyebrow">Licensing · RLUSD · Direct to Escrow</p>
+      <h2 class="slide-title">
+        Choose your<br/>
+        <em>Tier</em>
+      </h2>
+      <p class="slide-body">
+        All payments in RLUSD. No Stripe. No bank. Direct to escrow —
+        released only after founder approval.
+      </p>
+
+      <div class="tiers-inline">
+        <div class="tier-inline" onclick="selectTier('tier_1_individual',100,'Individual')">
+          <div class="t-name">Individual</div>
+          <div class="t-price">100 RLUSD</div>
+          <div class="t-note">10 demo secrets · Full framework · Discord access</div>
+        </div>
+        <div class="tier-inline featured" onclick="selectTier('tier_2_business',500,'Business')">
+          <div class="t-name">Business</div>
+          <div class="t-price">500 RLUSD</div>
+          <div class="t-note">180 secrets · Biometric AI · 2% revenue share</div>
+        </div>
+        <div class="tier-inline" onclick="selectTier('tier_3_enterprise',2500,'Enterprise')">
+          <div class="t-name">Enterprise</div>
+          <div class="t-price">2,500 RLUSD</div>
+          <div class="t-note">All 299 secrets · DNA substrate · White-label rights</div>
+        </div>
+      </div>
+
+      <div class="slide-cta-row">
+        <button class="btn btn-primary" onclick="openModal('payment-modal')">Enter the Gate →</button>
+        <button class="btn btn-ghost" onclick="nextSlide()">See Domain Structure →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 5: Permissioned Domains ────────────────────────── -->
+  <div class="slide" data-slide="4" id="slide-4">
+    <div class="slide-bg" style="background-image:url('https://images.pexels.com/photos/20291/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2');background-position:center 30%;"></div>
+    <div class="slide-veil"></div>
+    <div class="slide-accent"></div>
+
+    <div class="slide-content">
+      <p class="slide-eyebrow">XRPL Architecture · On-Ledger</p>
+      <h2 class="slide-title">
+        Permissioned<br/>
+        <em>Domain</em> Structure
+      </h2>
+      <p class="slide-body">
+        All data lives on the XRPL ledger inside namespaced PermissionedDomains.
+        Unhackable access control — not code, not a database.
+      </p>
+
+      <div class="domains-tree-inline">
+<span class="tree-root">◈ forefathers.dao</span>
+<span class="tree-branch">├── </span><span class="tree-leaf">identity/</span>        <span class="tree-meta">← Ring 1</span>
+<span class="tree-branch">├── </span><span class="tree-leaf">legal/nda/</span>       <span class="tree-meta">← Ring 2</span>
+<span class="tree-branch">├── </span><span class="tree-leaf">escrow/</span>          <span class="tree-meta">← Ring 3 · RLUSD</span>
+<span class="tree-branch">├── </span><span class="tree-leaf">licenses/</span>        <span class="tree-meta">← Ring 5 · NFT records</span>
+<span class="tree-branch">└── </span><span class="tree-leaf">secrets/</span>         <span class="tree-meta">← 303 trade secrets</span>
+<span class="tree-branch">    ├── </span><span class="tree-leaf">legal/ patent/ ai/ bio/</span>   <span class="tree-meta">[Tier 1+]</span>
+<span class="tree-branch">    ├── </span><span class="tree-leaf">governance/ crypto/ nft/</span>  <span class="tree-meta">[Tier 2+]</span>
+<span class="tree-branch">    └── </span><span class="tree-leaf">economic/ dna/</span>           <span class="tree-meta">[Tier 3]</span>
+      </div>
+
+      <div class="slide-cta-row">
+        <button class="btn btn-xrp" onclick="openModal('domains-modal')">◈ View My Domain</button>
+        <button class="btn btn-ghost" onclick="nextSlide()">Dev Net →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SLIDE 6: Dev Net ─────────────────────────────────────── -->
+  <div class="slide" data-slide="5" id="slide-5">
+    <div class="slide-bg" style="background-image:url('https://images.pexels.com/photos/76972/moose-moose-rack-male-bull-76972.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2');background-position:center 30%;"></div>
+    <div class="slide-veil"></div>
+    <div class="slide-accent"></div>
+
+    <div class="slide-content">
+      <p class="slide-eyebrow">Testing Environment · XRPL Testnet</p>
+      <h2 class="slide-title">
+        XRPL<br/>
+        <em>Dev Net</em>
+      </h2>
+      <p class="slide-body">
+        Test the complete 7-ring Lemniscate Gate flow on XRPL Testnet.
+        Free test XRP, full system, zero financial risk.
+        See it work before you commit.
+      </p>
+
+      <span class="status-badge" style="margin-bottom:1.5rem;display:inline-flex;">
+        <span class="status-dot"></span>
+        XRPL Testnet · Live
+      </span>
+
+      <div class="slide-cta-row">
+        <a href="https://xrpl.org/xrp-testnet-faucet.html" target="_blank" rel="noopener" class="btn btn-xrp">
+          ◈ Get Free Testnet XRP ↗
+        </a>
+        <a href="https://testnet.xrpl.org" target="_blank" rel="noopener" class="btn btn-ghost">
+          XRPL Explorer ↗
+        </a>
+        <button class="btn btn-primary" onclick="goToSlide(0)">← Back to Start</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /slides-container -->
+
+<!-- ================================================================
+     SLIDE NAVIGATION UI
+================================================================ -->
+<!-- Prev / Next arrows -->
+<button class="nav-arrow prev" id="btn-prev" onclick="prevSlide()" aria-label="Previous slide">‹</button>
+<button class="nav-arrow next" id="btn-next" onclick="nextSlide()" aria-label="Next slide">›</button>
+
+<!-- Progress dots -->
+<div class="slide-dots" id="slide-dots" role="tablist" aria-label="Slide navigation">
+  <button class="slide-dot active" onclick="goToSlide(0)" title="Intro" role="tab"></button>
+  <button class="slide-dot" onclick="goToSlide(1)" title="Portals" role="tab"></button>
+  <button class="slide-dot" onclick="goToSlide(2)" title="7 Rings" role="tab"></button>
+  <button class="slide-dot" onclick="goToSlide(3)" title="Licensing" role="tab"></button>
+  <button class="slide-dot" onclick="goToSlide(4)" title="Domains" role="tab"></button>
+  <button class="slide-dot" onclick="goToSlide(5)" title="Dev Net" role="tab"></button>
+</div>
+
+<!-- Slide counter -->
+<div class="slide-counter">
+  <span id="counter-current">1</span> / <span id="counter-total">6</span>
+</div>
+
+<!-- Click hint -->
+<div class="click-hint" id="click-hint">
+  <div class="click-hint-text">Click to advance</div>
+  <div class="click-hint-arrow"></div>
+</div>
+
+<!-- Keyboard hints -->
+<div class="kbd-hint">
+  <span class="kbd">← →</span>
+  <span class="kbd" style="font-size:.5rem;color:var(--fog)">navigate</span>
+</div>
+
+<!-- ================================================================
+     PAYMENT PORTAL MODAL
+================================================================ -->
+<div class="modal-overlay" id="payment-modal" role="dialog" aria-modal="true" onclick="closeOnOverlay(event,'payment-modal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('payment-modal')">✕</button>
+    <h2 class="modal-title">Payment Portal</h2>
+    <p class="modal-sub">Direct RLUSD · No Stripe · No banks · Escrow-protected</p>
+    <div style="display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <button class="btn btn-ghost" id="t1-btn" onclick="selectTier('tier_1_individual',100,'Individual')" style="font-size:.65rem;padding:.45rem .9rem;">Tier 1 · 100 RLUSD</button>
+      <button class="btn btn-primary" id="t2-btn" onclick="selectTier('tier_2_business',500,'Business')" style="font-size:.65rem;padding:.45rem .9rem;">Tier 2 · 500 RLUSD</button>
+      <button class="btn btn-ghost" id="t3-btn" onclick="selectTier('tier_3_enterprise',2500,'Enterprise')" style="font-size:.65rem;padding:.45rem .9rem;">Tier 3 · 2,500 RLUSD</button>
+    </div>
+    <div class="modal-xrp-amount" id="pm-amount">500 RLUSD</div>
+    <p style="font-size:.7rem;color:var(--fog);margin-bottom:.75rem;" id="pm-tier-label">Business Tier · 500 RLUSD</p>
+    <p style="font-size:.72rem;color:var(--silver);margin-bottom:.4rem;">Send exact amount to:</p>
+    <div class="modal-wallet-field" id="pm-wallet" onclick="copyWallet()" title="Click to copy" tabindex="0" role="button">rLoadingWalletAddress...</div>
+    <div class="modal-memo" id="pm-memo">Memo Type: PAYMENT<br/>Memo Data: {"tier":"tier_2_business","discord_id":"YOUR_DISCORD_ID"}</div>
+    <div class="modal-info">⚡ Your RLUSD payment is held in a XRPL PermissionedDomain escrow until 2-of-3 founders approve. Complete Ring 2 (NDA) on Discord first — then send payment here.</div>
+    <a href="https://discord.gg/forefathers-dao" target="_blank" rel="noopener" class="btn btn-ghost" style="width:100%;justify-content:center;">Join Discord to start Ring 1 ↗</a>
+  </div>
+</div>
+
+<!-- ================================================================
+     MEMBERS ONLY MODAL
+================================================================ -->
+<div class="modal-overlay" id="members-modal" role="dialog" aria-modal="true" onclick="closeOnOverlay(event,'members-modal')">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('members-modal')">✕</button>
+    <h2 class="modal-title">Members Only</h2>
+    <p class="modal-sub">Complete the 7 Rings to access THE-CODE and your trade secrets.</p>
+    <div id="members-locked" class="members-steps">
+      <div class="members-step"><div class="step-num">1</div><div class="step-info"><div class="step-title">Connect Your Wallet</div><div class="step-desc">Link the XRPL wallet that holds your License NFT.</div></div></div>
+      <div class="members-step"><div class="step-num">2</div><div class="step-info"><div class="step-title">Verify License NFT</div><div class="step-desc">We check your wallet for a valid ForeFathers DAO license NFT on-ledger.</div></div></div>
+      <div class="members-step"><div class="step-num">3</div><div class="step-info"><div class="step-title">Access Your Tier</div><div class="step-desc">PermissionedDomains unlock your licensed secrets automatically.</div></div></div>
+    </div>
+    <div id="members-unlocked" style="display:none;">
+      <div class="status-badge" style="margin-bottom:1rem;"><span class="status-dot"></span>License Verified · <span id="member-tier">Tier 2 Business</span></div>
+      <a href="#" class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:.75rem;" id="download-btn">↓ Download THE-CODE Package</a>
+      <a href="https://discord.gg/forefathers-dao" target="_blank" rel="noopener" class="btn btn-ghost" style="width:100%;justify-content:center;">Open Discord Members Area ↗</a>
+    </div>
+    <div style="margin-top:1.5rem;border-top:1px solid rgba(255,255,255,.05);padding-top:1.25rem;">
+      <button class="btn btn-xrp" onclick="connectWallet();closeModal('members-modal');" style="width:100%;justify-content:center;margin-bottom:.75rem;">◈ Connect Wallet to Verify</button>
+      <a href="#" onclick="loginWithDiscord();return false;" class="btn" style="width:100%;justify-content:center;background:#5865F2;color:#fff;border:none;">🎮 Sign in with Discord</a>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     DOMAINS MODAL
+================================================================ -->
+<div class="modal-overlay" id="domains-modal" role="dialog" aria-modal="true" onclick="closeOnOverlay(event,'domains-modal')">
+  <div class="modal" style="max-width:560px;">
+    <button class="modal-close" onclick="closeModal('domains-modal')">✕</button>
+    <h2 class="modal-title">Your Domain Access</h2>
+    <p class="modal-sub" id="dm-sub">Connect wallet to query your PermissionedDomain permissions.</p>
+    <div id="domain-connected" style="display:none;">
+      <div class="status-badge" style="margin-bottom:1rem;"><span class="status-dot"></span><span id="dm-wallet-short">rXXX...XXXX</span></div>
+      <div class="domains-tree-inline" id="dm-tree" style="margin-top:1rem;font-size:.68rem;line-height:1.9;">Loading permissions...</div>
+    </div>
+    <div id="domain-disconnected">
+      <div class="domains-tree-inline" style="margin:1.5rem 0;">
+<span style="color:var(--fog)">$ query_permissions --account [connect wallet]</span>
+<span style="color:var(--fog)">Waiting for wallet connection...</span>
+<span style="color:var(--gold)">→</span> Connect wallet to see your access
+      </div>
+      <button class="btn btn-xrp" onclick="connectWallet()" style="width:100%;justify-content:center;">◈ Connect Wallet</button>
+    </div>
+    <div style="margin-top:1.5rem;display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;">
+      <a id="dm-direct-link" href="#" target="_blank" rel="noopener" class="btn btn-xrp" style="font-size:.65rem;display:none;">⬡ Open My Domain ↗</a>
+      <a id="dm-explorer-link" href="https://testnet.xrpl.org" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:.65rem;">View on XRPL Explorer ↗</a>
+    </div>
+  </div>
+</div>
+
+<!-- Copy Toast -->
+<div class="copy-toast" id="copy-toast" role="status" aria-live="polite">Copied to clipboard</div>
+
+<!-- ================================================================
+     JAVASCRIPT
+================================================================ -->
+<script>
+/* ================================================================
+   CONFIG
+================================================================ */
+const CONFIG = {
+  DAO_WALLET:        window.__FF_DAO_WALLET__        || 'rDAOWalletAddressHere',
+  DISCORD_INVITE:    window.__FF_DISCORD_INVITE__    || 'https://discord.gg/forefathers-dao',
+  DISCORD_GUILD_ID:  window.__FF_DISCORD_GUILD_ID__  || '',
+  DISCORD_CLIENT_ID: window.__FF_DISCORD_CLIENT_ID__ || '',
+  XRPL_NETWORK:      window.__FF_XRPL_NETWORK__      || 'testnet',
+  DOWNLOAD_URL:      window.__FF_DOWNLOAD_URL__       || '#',
+  PERMISSIONED_DOMAIN: window.__FF_PERMISSIONED_DOMAIN__ || '',
+};
+
+/* ================================================================
+   SLIDE STATE
+================================================================ */
+const slides = document.querySelectorAll('.slide');
+const dots   = document.querySelectorAll('.slide-dot');
+const TOTAL  = slides.length;
+let current  = 0;
+let animating = false;
+
+document.getElementById('counter-total').textContent = TOTAL;
+
+function goToSlide(index) {
+  if (animating || index === current || index < 0 || index >= TOTAL) return;
+  animating = true;
+
+  const prevSlide = slides[current];
+  const nextSlide = slides[index];
+
+  // Exit current
+  prevSlide.classList.add('exiting');
+  prevSlide.classList.remove('entering');
+
+  setTimeout(() => {
+    prevSlide.classList.remove('active', 'exiting');
+    prevSlide.style.opacity = '';
+
+    // Enter next
+    nextSlide.classList.add('active');
+    // Force reflow
+    nextSlide.getBoundingClientRect();
+    nextSlide.classList.add('entering');
+
+    current = index;
+    updateNav();
+
+    setTimeout(() => {
+      nextSlide.classList.remove('entering');
+      animating = false;
+    }, 900);
+  }, 450);
+}
+
+function nextSlide() { goToSlide(current + 1); }
+function prevSlide() { goToSlide(current - 1); }
+
+function updateNav() {
+  // Dots
+  dots.forEach((d, i) => d.classList.toggle('active', i === current));
+
+  // Counter
+  document.getElementById('counter-current').textContent = current + 1;
+
+  // Arrow states
+  document.getElementById('btn-prev').disabled = current === 0;
+  document.getElementById('btn-next').disabled = current === TOTAL - 1;
+
+  // Hide click hint after first advance
+  if (current > 0) {
+    document.getElementById('click-hint').classList.add('hidden');
+  }
+}
+
+// Init
+updateNav();
+
+/* ================================================================
+   CLICK TO ADVANCE (anywhere on slide, except interactive elements)
+================================================================ */
+document.getElementById('slides-container').addEventListener('click', function(e) {
+  // Don't advance if clicking a button, link, or interactive element
+  const tag = e.target.tagName;
+  const interactive = e.target.closest('button, a, [role="button"], [tabindex]');
+  if (interactive) return;
+
+  nextSlide();
+});
+
+/* ================================================================
+   KEYBOARD NAVIGATION
+================================================================ */
+document.addEventListener('keydown', e => {
+  // Don't intercept when modal is open
+  if (document.querySelector('.modal-overlay.active')) {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.active').forEach(el => closeModal(el.id));
+    }
+    return;
+  }
+
+  switch(e.key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+    case ' ':
+      e.preventDefault();
+      nextSlide();
+      break;
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      e.preventDefault();
+      prevSlide();
+      break;
+    case 'Home':
+      goToSlide(0);
+      break;
+    case 'End':
+      goToSlide(TOTAL - 1);
+      break;
+  }
+});
+
+/* ================================================================
+   TOUCH / SWIPE SUPPORT
+================================================================ */
+let touchStartX = 0;
+let touchStartY = 0;
+
+document.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+document.addEventListener('touchend', e => {
+  if (document.querySelector('.modal-overlay.active')) return;
+
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+    if (dx < 0) nextSlide();
+    else prevSlide();
+  }
+}, { passive: true });
+
+/* ================================================================
+   NAV — hamburger
+================================================================ */
+function toggleMenu() {
+  const links = document.getElementById('nav-links');
+  const btn   = document.getElementById('hamburger');
+  const open  = links.classList.toggle('open');
+  btn.setAttribute('aria-expanded', open);
+}
+
+document.getElementById('nav-links').querySelectorAll('a, button').forEach(el => {
+  el.addEventListener('click', () => {
+    document.getElementById('nav-links').classList.remove('open');
+    document.getElementById('hamburger').setAttribute('aria-expanded', false);
+  });
+});
+
+/* ================================================================
+   MODAL SYSTEM
+================================================================ */
+function openModal(id) {
+  const overlay = document.getElementById(id);
+  if (!overlay) return;
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => {
+    const focusable = overlay.querySelector('button, a, input');
+    if (focusable) focusable.focus();
+  }, 100);
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function closeOnOverlay(event, id) {
+  if (event.target === document.getElementById(id)) closeModal(id);
+}
+
+/* ================================================================
+   TIER SELECTION
+================================================================ */
+function selectTier(tier, amount, name) {
+  state.selectedTier     = tier;
+  state.selectedAmount   = amount;
+  state.selectedTierName = name;
+  document.getElementById('pm-amount').textContent = `${amount.toLocaleString()} RLUSD`;
+  document.getElementById('pm-tier-label').textContent = `${name} Tier · ${amount.toLocaleString()} RLUSD`;
+  document.getElementById('pm-memo').innerHTML =
+    `Memo Type: PAYMENT<br/>Memo Data: {"tier":"${tier}","discord_id":"YOUR_DISCORD_ID"}`;
+  openModal('payment-modal');
+}
+
+/* ================================================================
+   STATE
+================================================================ */
+const state = {
+  walletConnected: false,
+  walletAddress: null,
+  licenseNFT: null,
+  licenseTier: null,
+  selectedTier: 'tier_2_business',
+  selectedAmount: 500,
+  selectedTierName: 'Business',
+  domainReady: false,
+};
+
+/* ================================================================
+   WALLET
+================================================================ */
+async function connectWallet() {
+  if (state.walletConnected) { disconnectWallet(); return; }
+  try {
+    const demo = prompt('Enter XRPL wallet address to demo (or cancel):');
+    if (!demo) return;
+    state.walletAddress  = demo.trim();
+    state.walletConnected = true;
+    updateWalletUI();
+    await verifyLicense();
+  } catch (err) { console.error('Wallet connect error:', err); }
+}
+
+function disconnectWallet() {
+  state.walletConnected = false;
+  state.walletAddress   = null;
+  state.licenseNFT      = null;
+  state.licenseTier     = null;
+  updateWalletUI();
+}
+
+function updateWalletUI() {
+  const btn = document.getElementById('wallet-btn');
+  if (state.walletConnected && state.walletAddress) {
+    const short = `${state.walletAddress.slice(0,6)}…${state.walletAddress.slice(-4)}`;
+    btn.innerHTML = `<span class="wallet-dot"></span>${short}`;
+    btn.classList.add('connected');
+    updateDomainsModal();
+  } else {
+    btn.innerHTML = 'Connect Wallet';
+    btn.classList.remove('connected');
+  }
+}
+
+async function verifyLicense() {
+  if (!state.walletAddress) return;
+  try {
+    const res = await fetch('/.netlify/functions/verify-license', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account: state.walletAddress }),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.verified) {
+      state.licenseNFT  = data.nft_id;
+      state.licenseTier = data.tier;
+      updateMembersModal(data);
+      updateDomainsModal(data);
+    }
+  } catch (err) { console.warn('License verify (offline):', err); }
+}
+
+function updateMembersModal(data) {
+  if (!data || !data.verified) return;
+  document.getElementById('members-locked').style.display = 'none';
+  document.getElementById('members-unlocked').style.display = 'block';
+  document.getElementById('member-tier').textContent = data.tier_name || state.licenseTier;
+  if (data.download_url) document.getElementById('download-btn').href = data.download_url;
+}
+
+function updateDomainsModal(data) {
+  if (!state.walletConnected) return;
+  document.getElementById('domain-disconnected').style.display = 'none';
+  document.getElementById('domain-connected').style.display = 'block';
+  const short = `${state.walletAddress.slice(0,8)}…${state.walletAddress.slice(-6)}`;
+  document.getElementById('dm-wallet-short').textContent = short;
+  const tree = document.getElementById('dm-tree');
+  if (data && data.accessible_secrets) {
+    const count = data.accessible_secrets.length;
+    tree.innerHTML = `<span style="color:var(--gold)">✓</span> Account: ${short}
+<span style="color:var(--gold)">✓</span> License: ${data.tier_name || 'Verified'}
+<span style="color:var(--xrp)">◈</span> Accessible Secrets: ${count}
+${data.accessible_secrets.slice(0,8).map(s=>`<span style="color:var(--fog)">  ├── </span><span style="color:var(--xrp)">${s}</span>`).join('\n')}
+${count > 8 ? `<span style="color:var(--fog)">  └── … and ${count - 8} more</span>` : ''}`;
+  } else {
+    tree.innerHTML = `<span style="color:var(--gold)">✓</span> Connected: ${short}
+<span style="color:var(--fog)">  No license NFT found on this wallet.</span>
+<span style="color:var(--gold)">→</span> Complete the 7 Rings to get access.`;
+  }
+}
+
+/* ================================================================
+   DISCORD OAUTH
+================================================================ */
+function loginWithDiscord() {
+  if (!CONFIG.DISCORD_CLIENT_ID) {
+    window.open(CONFIG.DISCORD_INVITE, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  const params = new URLSearchParams({
+    client_id: CONFIG.DISCORD_CLIENT_ID,
+    redirect_uri: `${window.location.origin}/auth/discord/callback`,
+    response_type: 'code',
+    scope: 'identify guilds',
+    state: btoa(JSON.stringify({ ts: Date.now(), tier: state.selectedTier })),
+  });
+  window.location.href = `https://discord.com/api/oauth2/authorize?${params}`;
+}
+
+function handleDiscordCallback() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('auth') === 'success') {
+    const discordId = params.get('discord_id');
+    if (discordId) {
+      state.discordId     = discordId;
+      state.discordMember = params.get('member') === 'true';
+      openModal('members-modal');
+      if (state.walletAddress) verifyLicense();
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}
+
+/* ================================================================
+   WALLET ADDRESS / CONFIG LOAD
+================================================================ */
+async function loadDAOWallet() {
+  try {
+    const res = await fetch('/.netlify/functions/config');
+    if (!res.ok) throw new Error();
+    const cfg = await res.json();
+    if (cfg.dao_wallet) {
+      CONFIG.DAO_WALLET = cfg.dao_wallet;
+      document.getElementById('pm-wallet').textContent = cfg.dao_wallet;
+    }
+    if (cfg.discord_invite) {
+      CONFIG.DISCORD_INVITE = cfg.discord_invite;
+      document.getElementById('discord-nav-link').href = cfg.discord_invite;
+      const dsTab = document.getElementById('ds-discord-tab');
+      if (dsTab) dsTab.href = cfg.discord_invite;
+    }
+    if (cfg.discord_client_id) CONFIG.DISCORD_CLIENT_ID = cfg.discord_client_id;
+    if (cfg.permissioned_domain) activateDomainLink(cfg.permissioned_domain);
+  } catch {
+    document.getElementById('pm-wallet').textContent = CONFIG.DAO_WALLET;
+  }
+}
+
+/* ================================================================
+   PERMISSIONED DOMAIN
+================================================================ */
+function openPermissionedDomainTab(e) {
+  if (CONFIG.PERMISSIONED_DOMAIN && state.domainReady) return true;
+  e.preventDefault();
+  openModal('domains-modal');
+}
+
+function openDomainsPortal() {
+  if (CONFIG.PERMISSIONED_DOMAIN && state.domainReady) {
+    window.open(buildDomainExplorerUrl(CONFIG.PERMISSIONED_DOMAIN), '_blank', 'noopener,noreferrer');
+  } else {
+    openModal('domains-modal');
+  }
+}
+
+function buildDomainExplorerUrl(domainId) {
+  const base = CONFIG.XRPL_NETWORK === 'mainnet' ? 'https://livenet.xrpl.org' : 'https://testnet.xrpl.org';
+  return `${base}/domains/${domainId}`;
+}
+
+function activateDomainLink(domainId) {
+  if (!domainId) return;
+  state.domainReady = true;
+  const url = buildDomainExplorerUrl(domainId);
+  const dsTab    = document.getElementById('ds-domain-tab');
+  const dsStatus = document.getElementById('ds-domain-status');
+  if (dsTab) { dsTab.href = url; }
+  if (dsStatus) { dsStatus.classList.remove('pending'); dsStatus.classList.add('live'); }
+  const dmLink = document.getElementById('dm-direct-link');
+  dmLink.href = url;
+  dmLink.style.display = 'inline-flex';
+}
+
+function copyWallet() {
+  navigator.clipboard.writeText(CONFIG.DAO_WALLET).then(() => {
+    const toast = document.getElementById('copy-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+  });
+}
+
+/* ================================================================
+   INIT
+================================================================ */
+window.addEventListener('load', () => {
+  loadDAOWallet();
+  handleDiscordCallback();
+});
+</script>
+</body>
+</html>
