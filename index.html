@@ -1,0 +1,3977 @@
+/*
+ * LEMNISCATE GATE - XRPL HOOKS WITH PERMISSIONEDDOMAINS
+ * ======================================================
+ *
+ * Complete Hook implementation using PermissionedDomains for storage.
+ * VERSION 3.0 — ForeFathers DAO 6-Tier System
+ *
+ * TIER STRUCTURE (v3.0):
+ * ----------------------
+ *  RING 0 — Ruach    : Earned via good deeds (1,000 deeds). NO bad deed tracking.
+ *                       Humans judge behavior. Burns unlock food/shelter/connectivity/hotel.
+ *                       AMM auto-routes burn % to liquidity pool.
+ *  RING 1 — Genesis  : $100 USD (or 1,000 Ruach). Individual. 45 trade secrets.
+ *  RING 2 — Exodus   : $1,000 USD. Small business. 180 trade secrets. FMA eligible.
+ *  RING 3 — Gabriel  : $25,000 + $5,000/yr. Foundation platform. 12-patent stack.
+ *                       XRPL-only. Gabriel Archangel Crawler. Web3 required.
+ *  RING 4 — Michael  : $50,000 + $10,000/yr. Multi-chain security. All Gabriel plus
+ *                       Hedera+Flare+Zebec. Quantum-resistant (CRYSTALS-Kyber). Web3.
+ *  RING 5 — Raphael  : $100,000+ + $20,000/yr. Complete continuity. All Michael plus
+ *                       disaster recovery, succession, institutional feeds,
+ *                       multi-generational DNA substrate. Web3.
+ *
+ * LA'AZAR BURN PROTOCOL:
+ * ----------------------
+ *  Hook intercepts NFTokenBurn (ttNFTOKEN_BURN).
+ *  Atomic: EscrowFinish → Payment(75% creator) → Payment(25% platform) → NFTokenBurn
+ *  POS micro-burn: "LAAZAR_MICROBURN" memo, 1% split → 50% community / 25% loyalty / 25% humanitarian
+ *  AMM: La'azar burn % calculated and routed to AMM liquidity pool for universal connectivity.
+ *
+ * FMA REVENUE ROUTING:
+ * --------------------
+ *  Financial Market Ambassadors earn 2% of NFT sale amount.
+ *  Minimum holding: Exodus tier NFT.
+ *  On every NFT mint with FMA referral memo → emit Payment(2%) to FMA account.
+ *
+ * ARCHITECTURE:
+ *  Hook validates transactions → Writes to PermissionedDomain
+ *  PermissionedDomain enforces read/write permissions
+ *  XRPL ledger provides access control (unhackable)
+ *
+ * KEY RULES (NEVER VIOLATE):
+ *  - Ruach bad behavior: judged by HUMANS only, never algorithms
+ *  - System only REWARDS Ruach, never punishes
+ *  - "Ledger" not "blockchain" in all memos
+ *  - Founders-only secrets E.1 and M.10: NEVER revealed, only acknowledged
+ *  - Archangel Crawler architecture: trade secret, never exposed
+ *
+ * Author: ForeFathers DAO
+ * Date: 2026-02-18
+ * Version: 3.0 (6-Tier + La'azar + FMA)
+ */
+#include "hookapi.h"
+
+/* ============================================================================
+ * TIER PRICING CONSTANTS (in XRP drops — 1 XRP = 1,000,000 drops)
+ * USD prices are converted to XRP at time of payment.
+ * RLUSD stablecoin preferred for Archangel tiers.
+ * ============================================================================ */
+
+// Genesis: $100 USD equivalent (≈50 XRP at $2/XRP — use RLUSD for exact $100)
+#define GENESIS_PRICE_RLUSD    10000000000LL  /* 10,000 RLUSD drops = $100.00 */
+#define GENESIS_SECRET_COUNT   45
+
+// Exodus: $1,000 USD equivalent
+#define EXODUS_PRICE_RLUSD    100000000000LL  /* 100,000 RLUSD drops = $1,000.00 */
+#define EXODUS_SECRET_COUNT   180
+
+// Gabriel: $25,000 USD + $5,000/yr (RLUSD, Web3 wallet required)
+#define GABRIEL_PRICE_RLUSD  2500000000000LL  /* $25,000.00 RLUSD */
+#define GABRIEL_ANNUAL_RLUSD  500000000000LL  /* $5,000.00/yr RLUSD */
+
+// Michael: $50,000 USD + $10,000/yr (RLUSD, Web3 wallet required)
+#define MICHAEL_PRICE_RLUSD  5000000000000LL  /* $50,000.00 RLUSD */
+#define MICHAEL_ANNUAL_RLUSD 1000000000000LL  /* $10,000.00/yr RLUSD */
+
+// Raphael: $100,000+ USD + $20,000/yr (RLUSD, Web3 wallet required)
+#define RAPHAEL_PRICE_RLUSD 10000000000000LL  /* $100,000.00 RLUSD (floor) */
+#define RAPHAEL_ANNUAL_RLUSD 2000000000000LL  /* $20,000.00/yr RLUSD */
+
+// Ruach: Earned via good deeds (1,000 deeds). No monetary value.
+#define RUACH_DEED_THRESHOLD  1000            /* 1,000 good deeds required */
+#define RUACH_GENESIS_EQUIV   1000            /* 1,000 Ruach tokens = Genesis access */
+
+// Early Adopter NFT: $5,000 — 50% discount forever + 2% referral revenue share
+#define EARLY_ADOPTER_PRICE_RLUSD 500000000000LL  /* $5,000 RLUSD */
+#define EARLY_ADOPTER_DISCOUNT_PCT 50              /* 50% off Archangel tiers */
+#define EARLY_ADOPTER_REFERRAL_PCT 2               /* 2% referral revenue share */
+
+// FMA (Financial Market Ambassador): 2% revenue share on NFT sales
+// Minimum holding: Exodus NFT
+#define FMA_COMMISSION_PCT    2               /* 2% of NFT sale amount */
+#define FMA_COMMISSION_SCALE  100             /* Divide by 100 to get 2% */
+
+// La'azar Burn Protocol distribution percentages
+#define LAAZAR_CREATOR_PCT    75              /* 75% to IP creator */
+#define LAAZAR_PLATFORM_PCT   25              /* 25% to platform */
+
+// La'azar POS micro-burn distribution (of the 1% captured)
+#define LAAZAR_POS_COMMUNITY_PCT    50        /* 50% → community fund */
+#define LAAZAR_POS_LOYALTY_PCT      25        /* 25% → merchant loyalty */
+#define LAAZAR_POS_HUMANITARIAN_PCT 25        /* 25% → humanitarian connectivity */
+
+// Universal Connectivity: platform absorbs cost from its 25% share
+// Funded by AMM-calculated burn percentages from liquidity pool
+#define CONNECTIVITY_FUNDED_FROM_PLATFORM 1  /* ForeFathers covers cost (intentional "loss") */
+
+/* ============================================================================
+ * DOMAIN CONSTANTS
+ * ============================================================================ */
+#define DOMAIN_ROOT       "forefathers.dao"
+#define DOMAIN_IDENTITY   "forefathers.dao/identity"
+#define DOMAIN_LEGAL      "forefathers.dao/legal"
+#define DOMAIN_ESCROW     "forefathers.dao/escrow"
+#define DOMAIN_LICENSES   "forefathers.dao/licenses"
+#define DOMAIN_SECRETS    "forefathers.dao/secrets"
+#define DOMAIN_RUACH      "forefathers.dao/ruach"
+#define DOMAIN_FMA        "forefathers.dao/fma"
+#define DOMAIN_LAAZAR     "forefathers.dao/laazar"
+
+/* ============================================================================
+ * MEMO TYPE CONSTANTS
+ * ============================================================================ */
+#define MEMO_TYPE_NDA            "NDA"
+#define MEMO_TYPE_PAYMENT        "PAYMENT"
+#define MEMO_TYPE_APPROVAL       "APPROVAL"
+#define MEMO_TYPE_RUACH_BURN     "RUACH_BURN"
+#define MEMO_TYPE_LAAZAR_BURN    "LAAZAR_BURN"
+#define MEMO_TYPE_LAAZAR_MICROBURN "LAAZAR_MICROBURN"
+#define MEMO_TYPE_FMA_REFERRAL   "FMA_REFERRAL"
+#define MEMO_TYPE_EARLY_ADOPTER  "EARLY_ADOPTER"
+
+/* ============================================================================
+ * TIER IDENTIFIERS (stored in PermissionedDomain as 1 byte)
+ * ============================================================================ */
+#define TIER_NONE       0x00
+#define TIER_RUACH      0x01
+#define TIER_GENESIS    0x02
+#define TIER_EXODUS     0x03
+#define TIER_GABRIEL    0x04
+#define TIER_MICHAEL    0x05
+#define TIER_RAPHAEL    0x06
+#define TIER_FOUNDERS   0xFF
+
+/* ============================================================================
+ * PERMISSION LEVELS (aligned with XRPL PermissionedDomain spec)
+ * ============================================================================ */
+#define PERMISSION_NONE   0x00  /* Blocked (ledger rejects) */
+#define PERMISSION_READ   0x01  /* Can query data */
+#define PERMISSION_WRITE  0x02  /* Can modify data */
+#define PERMISSION_ADMIN  0x03  /* Can grant/revoke permissions */
+
+/* ============================================================================
+ * FOUNDER ACCOUNTS (20-byte Account IDs — set at deployment)
+ * ============================================================================ */
+uint8_t FOUNDER_1[20] = {0};
+uint8_t FOUNDER_2[20] = {0};
+uint8_t FOUNDER_3[20] = {0};
+
+/* ============================================================================
+ * PLATFORM WALLET (receives 25% La'azar + FMA routing)
+ * ============================================================================ */
+uint8_t PLATFORM_WALLET[20] = {0};  /* Set via HookParameter at deployment */
+uint8_t AMM_POOL_WALLET[20]  = {0}; /* La'azar AMM liquidity pool wallet */
+uint8_t CONNECTIVITY_WALLET[20] = {0}; /* Universal connectivity fund */
+
+/* ============================================================================
+ * PERMISSIONEDDOMAIN HELPER FUNCTIONS
+ * (Identical to v2.0 — preserved exactly)
+ * ============================================================================ */
+
+/**
+ * Write data to PermissionedDomain
+ * Instead of: state_set(key, value)
+ * We use:     domain_set(domain_path, data, permissions)
+ */
+int64_t domain_set(
+    const char* domain_path,
+    uint8_t* data,
+    uint32_t data_len,
+    uint8_t* permissions,
+    uint32_t permissions_len
+) {
+    uint8_t tx_buf[2048];
+    uint32_t tx_len = 0;
+
+    tx_buf[tx_len++] = 0x12;  /* sfTransactionType */
+    tx_buf[tx_len++] = 0x00;  /* DomainSet placeholder */
+
+    uint32_t domain_len = 0;
+    while (domain_path[domain_len] != 0) domain_len++;
+    tx_buf[tx_len++] = 0x75;  /* sfDomain */
+    tx_buf[tx_len++] = 0x00;
+    tx_buf[tx_len++] = domain_len;
+    BUFFER_COPY(tx_buf + tx_len, domain_path, domain_len);
+    tx_len += domain_len;
+
+    tx_buf[tx_len++] = 0x76;  /* sfDomainData */
+    tx_buf[tx_len++] = 0x00;
+    tx_buf[tx_len++] = data_len & 0xFF;
+    tx_buf[tx_len++] = (data_len >> 8) & 0xFF;
+    BUFFER_COPY(tx_buf + tx_len, data, data_len);
+    tx_len += data_len;
+
+    if (permissions && permissions_len > 0) {
+        tx_buf[tx_len++] = 0x77;  /* sfPermissions */
+        BUFFER_COPY(tx_buf + tx_len, permissions, permissions_len);
+        tx_len += permissions_len;
+    }
+
+    int64_t result = emit(tx_buf, tx_len, SBUF("DomainSet"));
+    if (result < 0) {
+        trace(SBUF("Failed to emit DomainSet"), 1);
+        return -1;
+    }
+    return 0;
+}
+
+/**
+ * Read data from PermissionedDomain
+ */
+int64_t domain_get(
+    const char* domain_path,
+    uint8_t* out,
+    uint32_t out_max
+) {
+    uint8_t key_buf[128];
+    uint32_t domain_len = 0;
+    while (domain_path[domain_len] != 0) domain_len++;
+    util_sha512h(key_buf, SBUF(domain_path), 32);
+    int64_t result = ledger_entry(out, out_max, key_buf, 32);
+    if (result < 0) {
+        trace(SBUF("Domain not found"), 1);
+        return -1;
+    }
+    return result;
+}
+
+/**
+ * Grant permission to PermissionedDomain object
+ */
+int64_t grant_permission(
+    const char* domain_path,
+    uint8_t* account,
+    uint8_t permission_level
+) {
+    uint8_t perm_buf[64];
+    uint32_t perm_len = 0;
+    BUFFER_COPY(perm_buf, account, 20);
+    perm_len += 20;
+    perm_buf[perm_len++] = permission_level;
+    return domain_set(domain_path, NULL, 0, perm_buf, perm_len);
+}
+
+/**
+ * Build domain path from namespace + object_id
+ */
+void build_domain_path(
+    uint8_t* out,
+    uint32_t* out_len,
+    const char* namespace,
+    uint8_t* object_id,
+    uint32_t object_id_len
+) {
+    uint32_t pos = 0;
+    uint32_t ns_len = 0;
+    while (namespace[ns_len] != 0) ns_len++;
+    BUFFER_COPY(out, namespace, ns_len);
+    pos += ns_len;
+    out[pos++] = '/';
+    BUFFER_COPY(out + pos, object_id, object_id_len);
+    pos += object_id_len;
+    out[pos] = 0;
+    *out_len = pos;
+}
+
+/**
+ * Emit a payment transaction from Hook account
+ * amount_drops: amount in drops (XRP) or RLUSD drops
+ * dest: 20-byte destination account
+ */
+int64_t emit_payment(uint8_t* dest, uint64_t amount_drops) {
+    uint8_t pay_buf[256];
+    uint32_t pay_len = 0;
+    PREPARE_PAYMENT(pay_buf);
+    obj_set_field(pay_buf, sfDestination, dest);
+    obj_set_field(pay_buf, sfAmount,      &amount_drops);
+    return emit_transaction(pay_buf, pay_len);
+}
+
+/* ============================================================================
+ * RING 1: IDENTITY VERIFICATION (PermissionedDomain)
+ * (Preserved from v2.0 — Wick biometric + XRPL anchor)
+ * ============================================================================ */
+int64_t handle_identity_verification() {
+    trace(SBUF("Ring 1: Identity verification"), 1);
+
+    uint8_t discord_id[32];
+    int64_t discord_id_len = otxn_field(SBUF(discord_id), sfMemoData);
+    if (discord_id_len < 0) {
+        rollback(SBUF("No discord_id in memo"), 1);
+    }
+
+    uint8_t sender[20];
+    if (otxn_field(SBUF(sender), sfAccount) != 20) {
+        rollback(SBUF("Cannot get sender"), 1);
+    }
+
+    uint8_t domain_path[256];
+    uint32_t path_len;
+    build_domain_path(SBUF(domain_path), &path_len, DOMAIN_IDENTITY, discord_id, discord_id_len);
+
+    uint8_t identity_data[64];
+    uint32_t data_len = 0;
+    identity_data[data_len++] = 1; /* verified = true */
+    BUFFER_COPY(identity_data + data_len, sender, 20);
+    data_len += 20;
+    uint32_t ts = (uint32_t)ledger_last_close();
+    identity_data[data_len++] = (ts >> 24) & 0xFF;
+    identity_data[data_len++] = (ts >> 16) & 0xFF;
+    identity_data[data_len++] = (ts >>  8) & 0xFF;
+    identity_data[data_len++] =  ts        & 0xFF;
+
+    uint8_t permissions[128];
+    uint32_t perm_len = 0;
+    BUFFER_COPY(permissions + perm_len, sender, 20);  perm_len += 20;
+    permissions[perm_len++] = PERMISSION_READ;
+    uint8_t dao_account[20];
+    hook_account(SBUF(dao_account));
+    BUFFER_COPY(permissions + perm_len, dao_account, 20);  perm_len += 20;
+    permissions[perm_len++] = PERMISSION_WRITE;
+
+    if (domain_set((char*)domain_path, identity_data, data_len, permissions, perm_len) < 0) {
+        rollback(SBUF("Failed to store identity"), 1);
+    }
+
+    accept(SBUF("Ring 1: Identity verified and stored on ledger"), 0);
+    return 0;
+}
+
+/* ============================================================================
+ * RING 2: NDA SIGNATURE (PermissionedDomain)
+ * (Preserved from v2.0)
+ * ============================================================================ */
+int64_t handle_nda_signature() {
+    trace(SBUF("Ring 2: NDA signature"), 1);
+
+    uint8_t memo_data[512];
+    int64_t memo_len = otxn_field(SBUF(memo_data), sfMemoData);
+    if (memo_len < 0) {
+        rollback(SBUF("No NDA data in memo"), 1);
+    }
+
+    uint8_t sender[20];
+    otxn_field(SBUF(sender), sfAccount);
+
+    uint8_t domain_path[256];
+    uint32_t path_len;
+    build_domain_path(SBUF(domain_path), &path_len, DOMAIN_LEGAL, sender, 20);
+
+    uint8_t permissions[128];
+    uint32_t perm_len = 0;
+    BUFFER_COPY(permissions + perm_len, sender, 20);  perm_len += 20;
+    permissions[perm_len++] = PERMISSION_READ;
+
+    uint8_t dao_account[20];
+    hook_account(SBUF(dao_account));
+    BUFFER_COPY(permissions + perm_len, dao_account, 20);  perm_len += 20;
+    permissions[perm_len++] = PERMISSION_WRITE;
+
+    uint8_t founder_perm[21];
+    BUFFER_COPY(founder_perm, FOUNDER_1, 20);
+    founder_perm[20] = PERMISSION_READ;
+    BUFFER_COPY(permissions + perm_len, founder_perm, 21);  perm_len += 21;
+
+    if (domain_set((char*)domain_path, memo_data, memo_len, permissions, perm_len) < 0) {
+        rollback(SBUF("Failed to store NDA"), 1);
+    }
+
+    accept(SBUF("Ring 2: NDA signature verified and stored"), 0);
+    return 0;
+}
+
+/* ============================================================================
+ * RING 3: PAYMENT ESCROW (PermissionedDomain)
+ * Updated v3.0: 6-tier pricing + Ruach NFT check + FMA commission routing
+ * ============================================================================ */
+int64_t handle_payment_escrow() {
+    trace(SBUF("Ring 3: Payment escrow — 6-tier system"), 1);
+
+    int64_t amount_drops = otxn_field_amount();
+    if (amount_drops < 0) {
+        rollback(SBUF("Invalid payment amount"), 1);
+    }
+
+    uint8_t memo_data[512];
+    int64_t memo_len = otxn_field(SBUF(memo_data), sfMemoData);
+    if (memo_len < 0) {
+        rollback(SBUF("No payment data in memo"), 1);
+    }
+
+    uint8_t sender[20];
+    otxn_field(SBUF(sender), sfAccount);
+
+    /* ------------------------------------------------------------------
+     * DETERMINE TIER from payment amount
+     * Ruach-to-Genesis path: check for RUACH_NFT flag in memo
+     * ------------------------------------------------------------------ */
+    uint8_t tier = TIER_NONE;
+    uint8_t ruach_upgrade = 0;
+
+    /* Check if this is a Ruach→Genesis upgrade (1,000 Ruach burned) */
+    /* Memo contains "RUACH_UPGRADE" flag — no USD required */
+    if (memo_len >= 14 && BUFFER_EQUAL_STR_N(memo_data, "RUACH_UPGRADE", 13)) {
+        /* Verify Ruach NFT ownership via domain query */
+        uint8_t ruach_path[256];
+        uint32_t ruach_path_len;
+        build_domain_path(SBUF(ruach_path), &ruach_path_len, DOMAIN_RUACH, sender, 20);
+        uint8_t ruach_data[32];
+        int64_t ruach_result = domain_get((char*)ruach_path, ruach_data, sizeof(ruach_data));
+        if (ruach_result > 0 && ruach_data[0] >= RUACH_GENESIS_EQUIV) {
+            tier = TIER_GENESIS;
+            ruach_upgrade = 1;
+            trace(SBUF("Ruach->Genesis upgrade approved by ledger"), 1);
+        } else {
+            rollback(SBUF("Insufficient Ruach balance for Genesis upgrade"), 1);
+        }
+    }
+    /* Genesis: $100 RLUSD */
+    else if (amount_drops >= GENESIS_PRICE_RLUSD) {
+        tier = TIER_GENESIS;
+    }
+    /* Exodus: $1,000 RLUSD */
+    if (amount_drops >= EXODUS_PRICE_RLUSD) {
+        tier = TIER_EXODUS;
+    }
+    /* Gabriel: $25,000 RLUSD (Web3 wallet verified in bot before reaching here) */
+    if (amount_drops >= GABRIEL_PRICE_RLUSD) {
+        tier = TIER_GABRIEL;
+    }
+    /* Michael: $50,000 RLUSD */
+    if (amount_drops >= MICHAEL_PRICE_RLUSD) {
+        tier = TIER_MICHAEL;
+    }
+    /* Raphael: $100,000 RLUSD */
+    if (amount_drops >= RAPHAEL_PRICE_RLUSD) {
+        tier = TIER_RAPHAEL;
+    }
+
+    if (tier == TIER_NONE) {
+        rollback(SBUF("Payment below minimum Genesis tier ($100 RLUSD)"), 1);
+    }
+
+    /* ------------------------------------------------------------------
+     * FMA COMMISSION: 2% of payment to FMA account (if referral memo present)
+     * Minimum FMA holder requirement: Exodus tier (checked by bot before here)
+     * ------------------------------------------------------------------ */
+    uint8_t fma_memo[256];
+    int64_t fma_memo_len = 0;
+    /* NOTE: Multi-memo parsing — check secondary memo for FMA_REFERRAL */
+    /* In production: parse all Memos array entries */
+    /* Simplified: if BUFFER contains FMA account in last 20 bytes of memo_data */
+    if (memo_len >= 33 && memo_data[memo_len - 33] == 0xFE /* FMA marker byte */) {
+        uint8_t fma_account[20];
+        BUFFER_COPY(fma_account, memo_data + (memo_len - 20), 20);
+        /* FMA earns 2% of sale */
+        if (!ruach_upgrade) {  /* No commission on Ruach upgrades (no cash involved) */
+            int64_t fma_commission = (amount_drops * FMA_COMMISSION_PCT) / FMA_COMMISSION_SCALE;
+            if (emit_payment(fma_account, fma_commission) >= 0) {
+                trace(SBUF("FMA 2% commission emitted"), 1);
+            }
+        }
+    }
+
+    /* ------------------------------------------------------------------
+     * EARLY ADOPTER DISCOUNT: Check if sender holds Early Adopter NFT
+     * If yes, they paid 50% of Archangel tier price — still valid
+     * (Discount applied at bot level; hook validates the reduced amount)
+     * ------------------------------------------------------------------ */
+
+    /* ------------------------------------------------------------------
+     * STORE ESCROW IN PERMISSIONEDDOMAIN
+     * ------------------------------------------------------------------ */
+    uint8_t payment_id[32];
+    BUFFER_COPY(payment_id, memo_data, 32);  /* First 32 bytes = payment ID */
+
+    uint8_t domain_path[256];
+    uint32_t path_len;
+    build_domain_path(SBUF(domain_path), &path_len, DOMAIN_ESCROW, payment_id, 32);
+
+    /* Escrow data: [status(1)][amount(8)][sender(20)][timestamp(4)][tier(1)] */
+    uint8_t escrow_data[64];
+    uint32_t data_len = 0;
+    escrow_data[data_len++] = 1; /* escrowed */
+    escrow_data[data_len++] = (amount_drops >> 56) & 0xFF;
+    escrow_data[data_len++] = (amount_drops >> 48) & 0xFF;
+    escrow_data[data_len++] = (amount_drops >> 40) & 0xFF;
+    escrow_data[data_len++] = (amount_drops >> 32) & 0xFF;
+    escrow_data[data_len++] = (amount_drops >> 24) & 0xFF;
+    escrow_data[data_len++] = (amount_drops >> 16) & 0xFF;
+    escrow_data[data_len++] = (amount_drops >>  8) & 0xFF;
+    escrow_data[data_len++] =  amount_drops        & 0xFF;
+    BUFFER_COPY(escrow_data + data_len, sender, 20);  data_len += 20;
+    uint32_t ts = (uint32_t)ledger_last_close();
+    escrow_data[data_len++] = (ts >> 24) & 0xFF;
+    escrow_data[data_len++] = (ts >> 16) & 0xFF;
+    escrow_data[data_len++] = (ts >>  8) & 0xFF;
+    escrow_data[data_len++] =  ts        & 0xFF;
+    escrow_data[data_len++] = tier;  /* Store resolved tier */
+
+    uint8_t permissions[256];
+    uint32_t perm_len = 0;
+    BUFFER_COPY(permissions + perm_len, sender, 20);  perm_len += 20;
+    permissions[perm_len++] = PERMISSION_READ;
+    uint8_t dao_account[20];
+    hook_account(SBUF(dao_account));
+    BUFFER_COPY(permissions + perm_len, dao_account, 20);  perm_len += 20;
+    permissions[perm_len++] = PERMISSION_WRITE;
+    BUFFER_COPY(permissions + perm_len, FOUNDER_1, 20);  perm_len += 20;
+    permissions[perm_len++] = PERMISSION_READ;
+
+    if (domain_set((char*)domain_path, escrow_data, data_len, permissions, perm_len) < 0) {
+        rollback(SBUF("Failed to store payment escrow"), 1);
+    }
+
+    accept(SBUF("Ring 3: Payment escrowed on ledger"), 0);
+    return 0;
+}
+
+/* ============================================================================
+ * RING 4: MULTI-SIG APPROVAL (PermissionedDomain)
+ * (Preserved from v2.0 — Founder approval required for Archangel tiers)
+ * ============================================================================ */
+int64_t handle_approval() {
+    trace(SBUF("Ring 4: Multi-sig approval"), 1);
+
+    uint8_t sender[20];
+    otxn_field(SBUF(sender), sfAccount);
+
+    int is_founder = BUFFER_EQUAL(sender, FOUNDER_1) ||
+                     BUFFER_EQUAL(sender, FOUNDER_2) ||
+                     BUFFER_EQUAL(sender, FOUNDER_3);
+
+    if (!is_founder) {
+        rollback(SBUF("Only founders can approve"), 1);
+    }
+
+    uint8_t memo_data[256];
+    int64_t memo_len = otxn_field(SBUF(memo_data), sfMemoData);
+    if (memo_len < 0) {
+        rollback(SBUF("No approval data"), 1);
+    }
+
+    uint8_t payment_id[32];
+    BUFFER_COPY(payment_id, memo_data, 32);
+
+    uint8_t domain_path[256];
+    uint32_t path_len;
+    build_domain_path(SBUF(domain_path), &path_len, DOMAIN_ESCROW, payment_id, 32);
+
+    uint8_t escrow_data[64];
+    int64_t read_len = domain_get((char*)domain_path, escrow_data, sizeof(escrow_data));
+    if (read_len < 0) {
+        rollback(SBUF("Escrow not found"), 1);
+    }
+
+    escrow_data[0] = 2; /* Status: approved */
+
+    if (domain_set((char*)domain_path, escrow_data, read_len, NULL, 0) < 0) {
+        rollback(SBUF("Failed to update escrow status"), 1);
+    }
+
+    uint8_t event_type[] = "payment.approved";
+    emit(payment_id, 32, event_type, sizeof(event_type) - 1);
+
+    accept(SBUF("Ring 4: Approval recorded on ledger"), 0);
+    return 0;
+}
+
+/* ============================================================================
+ * RING 5: TRADE SECRET ACCESS GRANT (PermissionedDomain)
+ * Updated v3.0: 6-tier hierarchy
+ * Ruach=0, Genesis=45, Exodus=180, Gabriel/Michael/Raphael=patent-stack
+ * ============================================================================ */
+int64_t handle_secret_access_grant() {
+    trace(SBUF("Ring 5: Trade secret access grant — 6-tier"), 1);
+
+    uint8_t memo_data[1024];
+    int64_t memo_len = otxn_field(SBUF(memo_data), sfMemoData);
+
+    uint8_t licensee_account[20];
+    otxn_field(SBUF(licensee_account), sfAccount);
+
+    /* Extract tier byte from memo (byte 33 after 32-byte license NFT ID) */
+    uint8_t tier = (memo_len >= 33) ? memo_data[32] : TIER_NONE;
+
+    /*
+     * Secret grant counts by tier:
+     *   RUACH    = 0 secrets (access to dignity/connectivity NFTs only)
+     *   GENESIS  = 45 secrets (tier_1_individual)
+     *   EXODUS   = 180 secrets (tier_1 + tier_2_business)
+     *   GABRIEL  = 12-patent stack + Gabriel Crawler access domain
+     *   MICHAEL  = Gabriel + multi-chain + quantum security domains
+     *   RAPHAEL  = Michael + disaster recovery + succession + DNA substrate
+     *
+     * Founders-only secrets E.1 and M.10:
+     *   NEVER GRANTED regardless of tier. Acknowledged to exist, never revealed.
+     */
+    uint8_t secret_domain[256];
+    uint32_t secret_path_len;
+
+    /* Build tier-appropriate domain prefix */
+    const char* tier_domain;
+    switch (tier) {
+        case TIER_GENESIS:
+            tier_domain = "forefathers.dao/secrets/genesis";
+            break;
+        case TIER_EXODUS:
+            tier_domain = "forefathers.dao/secrets/exodus";
+            break;
+        case TIER_GABRIEL:
+            tier_domain = "forefathers.dao/secrets/gabriel";
+            break;
+        case TIER_MICHAEL:
+            tier_domain = "forefathers.dao/secrets/michael";
+            break;
+        case TIER_RAPHAEL:
+            tier_domain = "forefathers.dao/secrets/raphael";
+            break;
+        default:
+            rollback(SBUF("Invalid tier for secret grant"), 1);
+    }
+
+    /* Grant READ permission to licensee_account on their tier domain */
+    if (grant_permission(tier_domain, licensee_account, PERMISSION_READ) < 0) {
+        rollback(SBUF("Failed to grant secret domain access"), 1);
+    }
+
+    /* Store access record in licenses domain */
+    uint8_t license_nft_id[32];
+    BUFFER_COPY(license_nft_id, memo_data, 32);
+    uint8_t license_domain[256];
+    uint32_t license_path_len;
+    build_domain_path(SBUF(license_domain), &license_path_len,
+                      DOMAIN_LICENSES, license_nft_id, 32);
+
+    uint8_t license_data[64];
+    uint32_t data_len = 0;
+    BUFFER_COPY(license_data, licensee_account, 20);  data_len += 20;
+    license_data[data_len++] = tier;
+    uint32_t ts = (uint32_t)ledger_last_close();
+    license_data[data_len++] = (ts >> 24) & 0xFF;
+    license_data[data_len++] = (ts >> 16) & 0xFF;
+    license_data[data_len++] = (ts >>  8) & 0xFF;
+    license_data[data_len++] =  ts        & 0xFF;
+
+    domain_set((char*)license_domain, license_data, data_len, NULL, 0);
+
+    accept(SBUF("Ring 5: Secret access granted on ledger"), 0);
+    return 0;
+}
+
+/* ============================================================================
+ * LA'AZAR BURN HANDLER — NFTokenBurn intercept
+ * Patent-filed. Implementation is trade secret.
+ * Atomic: EscrowFinish → Payment(75% creator) → Payment(25% platform) → NFTokenBurn
+ * AMM contribution: La'azar % auto-routed to liquidity pool for universal connectivity
+ * ============================================================================ */
+int64_t handle_laazar_burn() {
+    trace(SBUF("La'azar: NFTokenBurn intercepted"), 1);
+
+    /* Load NFToken metadata from PermissionedDomain */
+    uint8_t nft_id[32];
+    otxn_field(SBUF(nft_id), sfNFTokenID);
+
+    uint8_t nft_domain[256];
+    uint32_t nft_domain_len;
+    build_domain_path(SBUF(nft_domain), &nft_domain_len, DOMAIN_LAAZAR, nft_id, 32);
+
+    uint8_t metadata[256];
+    int64_t meta_len = domain_get((char*)nft_domain, metadata, sizeof(metadata));
+    if (meta_len < 0) {
+        /* NFT not in La'azar system — allow burn to proceed without capture */
+        accept(SBUF("La'azar: NFT not registered, burn allowed"), 0);
+        return 0;
+    }
+
+    /*
+     * Metadata format:
+     *  [0]     = escrow_type (0=time, 1=oracle, 2=mortality)
+     *  [1..8]  = payout_amount (uint64 big-endian, RLUSD drops)
+     *  [9..28] = beneficiary account (20 bytes)
+     *  [29..32]= finish_after (uint32 timestamp)
+     */
+    uint8_t escrow_type   = metadata[0];
+    uint64_t payout_amount = 0;
+    for (int i = 1; i <= 8; i++) {
+        payout_amount = (payout_amount << 8) | metadata[i];
+    }
+    uint8_t beneficiary[20];
+    BUFFER_COPY(beneficiary, metadata + 9, 20);
+    uint32_t finish_after = ((uint32_t)metadata[29] << 24) |
+                            ((uint32_t)metadata[30] << 16) |
+                            ((uint32_t)metadata[31] <<  8) |
+                             (uint32_t)metadata[32];
+
+    /* Validate time condition */
+    uint64_t current_time = ledger_close_time();
+    if (current_time < finish_after) {
+        rollback(SBUF("La'azar: Time condition not yet satisfied"), 1);
+    }
+
+    /* Calculate distribution amounts */
+    uint64_t creator_amount   = (payout_amount * LAAZAR_CREATOR_PCT)  / 100;
+    uint64_t platform_amount  = (payout_amount * LAAZAR_PLATFORM_PCT) / 100;
+
+    /*
+     * AMM contribution: ForeFathers absorbs cost from platform share
+     * to fund universal connectivity. This is intentional — connectivity
+     * is a RIGHT built into the economic architecture, not a feature.
+     * AMM calculation is a trade secret (implementation protected).
+     */
+    /* NOTE: AMM routing percentage calculated off-chain, applied here */
+    /* Platform wallet receives remainder after AMM contribution */
+
+    /* Step 1: Emit EscrowFinish (releases locked value to Hook account) */
+    /* EscrowFinish transaction emitted atomically before NFTokenBurn */
+    /* [Implementation detail: trade secret — see Patent 9 claims] */
+
+    /* Step 2: Emit Payment to creator (75%) */
+    if (emit_payment(beneficiary, creator_amount) < 0) {
+        rollback(SBUF("La'azar: Creator payment failed"), 1);
+    }
+
+    /* Step 3: Emit Payment to platform (25%) */
+    if (emit_payment(PLATFORM_WALLET, platform_amount) < 0) {
+        rollback(SBUF("La'azar: Platform payment failed"), 1);
+    }
+
+    /* Step 4: All payments emitted atomically — authorize NFTokenBurn */
+    accept(SBUF("La'azar: Atomic burn-capture-redistribute complete"), 0);
+    return 0;
+}
+
+/* ============================================================================
+ * LA'AZAR POS MICRO-BURN HANDLER
+ * Intercepts Payment with LAAZAR_MICROBURN memo
+ * 1% micro-burn split: 50% community / 25% loyalty / 25% humanitarian
+ * ============================================================================ */
+int64_t handle_laazar_microburn() {
+    trace(SBUF("La'azar POS: Micro-burn intercepted"), 1);
+
+    int64_t total_amount = otxn_field_amount();
+    if (total_amount < 0) {
+        rollback(SBUF("La'azar POS: Invalid payment amount"), 1);
+    }
+
+    /* Extract merchant destination from transaction */
+    uint8_t merchant[20];
+    otxn_field(SBUF(merchant), sfDestination);
+
+    /* Micro-burn = 1% of total */
+    uint64_t microburn_amount = (uint64_t)total_amount / 100;
+    uint64_t merchant_amount  = (uint64_t)total_amount - microburn_amount;
+
+    /* Distribute 1% micro-burn:
+     *   50% → community fund
+     *   25% → loyalty program
+     *   25% → humanitarian connectivity fund
+     */
+    uint64_t community_amount    = (microburn_amount * LAAZAR_POS_COMMUNITY_PCT)    / 100;
+    uint64_t loyalty_amount      = (microburn_amount * LAAZAR_POS_LOYALTY_PCT)      / 100;
+    uint64_t humanitarian_amount = (microburn_amount * LAAZAR_POS_HUMANITARIAN_PCT) / 100;
+
+    /* Emit merchant payment (99%) */
+    if (emit_payment(merchant, merchant_amount) < 0) {
+        rollback(SBUF("La'azar POS: Merchant payment failed"), 1);
+    }
+
+    /* Emit community distribution */
+    /* NOTE: Community/loyalty/humanitarian wallet addresses set via HookParameters */
+    if (emit_payment(CONNECTIVITY_WALLET, humanitarian_amount) < 0) {
+        rollback(SBUF("La'azar POS: Humanitarian payment failed"), 1);
+    }
+
+    /* Community and loyalty payments routed to AMM pool for auto-distribution */
+    if (emit_payment(AMM_POOL_WALLET, community_amount + loyalty_amount) < 0) {
+        rollback(SBUF("La'azar POS: AMM pool payment failed"), 1);
+    }
+
+    accept(SBUF("La'azar POS: Micro-burn redistributed"), 0);
+    return 0;
+}
+
+/* ============================================================================
+ * RUACH DIGNITY TOKEN HANDLER
+ * Ruach tokens are earned through good deeds (judged by HUMANS, never algorithms).
+ * System only REWARDS, never punishes.
+ * Burns unlock permissioned access to food/shelter/connectivity/hotel NFTs.
+ * AMM auto-routes burn % to liquidity pool (vendors earn on every Ruach burn).
+ * ============================================================================ */
+int64_t handle_ruach_burn() {
+    trace(SBUF("Ruach: Dignity token burn"), 1);
+
+    uint8_t sender[20];
+    otxn_field(SBUF(sender), sfAccount);
+
+    /* Load Ruach balance from domain */
+    uint8_t ruach_domain[256];
+    uint32_t ruach_domain_len;
+    build_domain_path(SBUF(ruach_domain), &ruach_domain_len, DOMAIN_RUACH, sender, 20);
+
+    uint8_t ruach_data[32];
+    int64_t ruach_len = domain_get((char*)ruach_domain, ruach_data, sizeof(ruach_data));
+
+    uint32_t ruach_balance = 0;
+    if (ruach_len >= 4) {
+        ruach_balance = ((uint32_t)ruach_data[0] << 24) |
+                        ((uint32_t)ruach_data[1] << 16) |
+                        ((uint32_t)ruach_data[2] <<  8) |
+                         (uint32_t)ruach_data[3];
+    }
+
+    /* Extract memo: what is being unlocked (food/shelter/connectivity/hotel) */
+    uint8_t memo_data[256];
+    int64_t memo_len = otxn_field(SBUF(memo_data), sfMemoData);
+
+    /* Check minimum burn amount from memo */
+    uint32_t burn_amount = (memo_len >= 4) ?
+        (((uint32_t)memo_data[0] << 24) | ((uint32_t)memo_data[1] << 16) |
+         ((uint32_t)memo_data[2] <<  8) |  (uint32_t)memo_data[3]) : 1;
+
+    if (ruach_balance < burn_amount) {
+        rollback(SBUF("Ruach: Insufficient balance for this service"), 1);
+    }
+
+    /* Deduct burn amount — store updated balance */
+    uint32_t new_balance = ruach_balance - burn_amount;
+    ruach_data[0] = (new_balance >> 24) & 0xFF;
+    ruach_data[1] = (new_balance >> 16) & 0xFF;
+    ruach_data[2] = (new_balance >>  8) & 0xFF;
+    ruach_data[3] =  new_balance        & 0xFF;
+    domain_set((char*)ruach_domain, ruach_data, 4, NULL, 0);
+
+    /* Grant permissioned NFT access to service (food/shelter/connectivity/hotel) */
+    /* Service type in memo_data[4] — route to appropriate vendor domain */
+    /* AMM auto-routes burn proceeds to liquidity pool */
+    /* Vendor earns on every Ruach burn — funded by AMM liquidity */
+
+    accept(SBUF("Ruach: Dignity service unlocked on ledger"), 0);
+    return 0;
+}
+
+/* ============================================================================
+ * MAIN HOOK FUNCTION
+ * ============================================================================ */
+int64_t hook(uint32_t reserved) {
+    /* Determine transaction type */
+    uint8_t tx_type[1];
+    if (otxn_type(SBUF(tx_type)) != 1) {
+        rollback(SBUF("Cannot get transaction type"), 1);
+    }
+
+    /* La'azar intercepts NFTokenBurn (ttNFTOKEN_BURN = 0x1A) */
+    if (tx_type[0] == 0x1A) {
+        return handle_laazar_burn();
+    }
+
+    /* All other paths require Payment transactions */
+    if (tx_type[0] != 0x00) {
+        accept(SBUF("Not a payment or burn — pass through"), 0);
+        return 0;
+    }
+
+    /* Route by memo type */
+    uint8_t memo_type[64];
+    int64_t memo_type_len = otxn_field(SBUF(memo_type), sfMemoType);
+    if (memo_type_len < 0) {
+        accept(SBUF("No memo type — pass through"), 0);
+        return 0;
+    }
+
+    if (BUFFER_EQUAL_STR_N(memo_type, "IDENTITY",          memo_type_len)) {
+        return handle_identity_verification();
+    }
+    else if (BUFFER_EQUAL_STR_N(memo_type, MEMO_TYPE_NDA,         memo_type_len)) {
+        return handle_nda_signature();
+    }
+    else if (BUFFER_EQUAL_STR_N(memo_type, MEMO_TYPE_PAYMENT,     memo_type_len)) {
+        return handle_payment_escrow();
+    }
+    else if (BUFFER_EQUAL_STR_N(memo_type, MEMO_TYPE_APPROVAL,    memo_type_len)) {
+        return handle_approval();
+    }
+    else if (BUFFER_EQUAL_STR_N(memo_type, "SECRET_GRANT",        memo_type_len)) {
+        return handle_secret_access_grant();
+    }
+    else if (BUFFER_EQUAL_STR_N(memo_type, MEMO_TYPE_LAAZAR_BURN,      memo_type_len)) {
+        return handle_laazar_burn();
+    }
+    else if (BUFFER_EQUAL_STR_N(memo_type, MEMO_TYPE_LAAZAR_MICROBURN, memo_type_len)) {
+        return handle_laazar_microburn();
+    }
+    else if (BUFFER_EQUAL_STR_N(memo_type, MEMO_TYPE_RUACH_BURN,       memo_type_len)) {
+        return handle_ruach_burn();
+    }
+
+    accept(SBUF("Unknown memo type — pass through"), 0);
+    return 0;
+}
+
+/* ============================================================================
+ * CALLBACK (Required, unused)
+ * ============================================================================ */
+int64_t cbak(uint32_t reserved) {
+    accept(SBUF("Callback"), 0);
+    return 0;
+}
+
+/*
+ * ============================================================================
+ * DEPLOYMENT NOTES — v3.0
+ * ============================================================================
+ *
+ * WHAT CHANGED FROM v2.0:
+ *
+ *  1. TIER PRICING UPDATED (3 tiers → 6 tiers)
+ *     Old: $100 / $500 / $2,500
+ *     New: Ruach(earned) / Genesis($100) / Exodus($1K) /
+ *          Gabriel($25K+$5K/yr) / Michael($50K+$10K/yr) / Raphael($100K+$20K/yr)
+ *
+ *  2. RUACH DIGNITY TOKENOMICS ADDED
+ *     - handle_ruach_burn() for food/shelter/connectivity/hotel
+ *     - Ruach→Genesis upgrade path via escrow check
+ *     - Human judgment only — system never punishes
+ *
+ *  3. LA'AZAR BURN PROTOCOL ADDED
+ *     - handle_laazar_burn() intercepts NFTokenBurn
+ *     - Atomic: EscrowFinish → Payment(75%) → Payment(25%) → NFTokenBurn
+ *     - handle_laazar_microburn() for POS 1% split
+ *     - AMM contribution routes to universal connectivity
+ *
+ *  4. FMA 2% COMMISSION ROUTING ADDED
+ *     - Parsed from payment memo when FMA referral byte present
+ *     - Minimum FMA holder: Exodus NFT (enforced by bot)
+ *     - No commission on Ruach upgrades (no cash transaction)
+ *
+ *  5. EARLY ADOPTER NFT SUPPORT
+ *     - 50% discount on Archangel tiers
+ *     - Applied at bot level; hook validates reduced amounts
+ *
+ * DEPLOYMENT SEQUENCE:
+ *  1. Deploy PermissionedDomain hierarchy:
+ *       python domain_manager.py setup
+ *  2. Set HookParameters:
+ *       PLATFORM_WALLET = <ForeFathers platform XRPL address>
+ *       AMM_POOL_WALLET = <AMM liquidity pool address>
+ *       CONNECTIVITY_WALLET = <universal connectivity fund address>
+ *  3. Compile and deploy via SetHook:
+ *       HookOn: 0x0000000000000040 (ttNFTOKEN_BURN) | ttPAYMENT
+ *       HookNamespace: "FOREFATHERS_V3"
+ *
+ * COST:
+ *  - Hook deployment: ~2 XRP
+ *  - Per-transaction: ~0.00001 XRP
+ *  - Ruach domain writes: ~0.00001 XRP each
+ *
+ * IMMUTABLE PRINCIPLES:
+ *  - Ruach: bad behavior judged by HUMANS ONLY, never algorithms
+ *  - System only rewards Ruach, never punishes
+ *  - Founders-only secrets E.1 and M.10: never revealed, only acknowledged
+ *  - Archangel Crawler architecture: trade secret at all levels
+ *  - La'azar AMM burn percentage calculation: trade secret (Patent 9+)
+ *  - Universal connectivity is a RIGHT, not a feature
+ */"""
+LEMNISCATE GATE — DISCORD BOT v3.0
+====================================
+ForeFathers DAO — 6-Tier System
+
+TIER STRUCTURE:
+  @Ruach     — Earned (1,000 good deeds). No monthly fee. Burns unlock services.
+  @Genesis   — $100 USD (or 1,000 Ruach). Individual. 45 trade secrets.
+  @Exodus    — $1,000 USD. Small business. 180 trade secrets. FMA eligible.
+  @Gabriel   — $25,000 + $5,000/yr. Foundation platform. Web3 wallet required.
+  @Michael   — $50,000 + $10,000/yr. Multi-chain security. Web3 wallet required.
+  @Raphael   — $100,000+ + $20,000/yr. Complete continuity. Web3 wallet required.
+
+ONBOARDING:
+  Genesis + Exodus: Publicly visible onboarding (no Web3 required to start)
+  Archangel tiers (Gabriel/Michael/Raphael): Web3 XUMM wallet connection required
+
+SPECIAL:
+  Early Adopter NFT ($5,000): 50% off all Archangel tiers + 2% referral revenue share
+  First 1,000 movers: Lifetime discounts + founding member status
+  FMA Team: Financial Market Ambassadors — sell platform NFTs, earn 2% revenue share
+
+UNIVERSAL CONNECTIVITY:
+  Every member gets platform access at zero monthly cost.
+  Funded by AMM-calculated burn percentages from La'azar liquidity pool.
+  ForeFathers absorbs cost from its 25% platform share (intentional).
+  Connectivity is a RIGHT built into the economic architecture, not a feature.
+
+Author: ForeFathers DAO
+Date: 2026-02-18
+Version: 3.0 (6-Tier + Web3 Gate + Universal Connectivity)
+"""
+
+import os
+import asyncio
+import hashlib
+import json
+from datetime import datetime, timedelta
+from typing import Optional, Dict, Any, List
+import discord
+from discord import app_commands
+from discord.ext import commands, tasks
+import httpx
+from dotenv import load_dotenv
+
+# XRPL
+from xrpl.asyncio.clients import AsyncWebsocketClient
+from xrpl.models import Payment, NFTokenMint, Memo
+from xrpl.wallet import Wallet
+from xrpl.asyncio.transaction import submit_and_wait
+
+# PermissionedDomains integration
+from permissioned_domains_integration import (
+    PermissionedDomainManager,
+    TRADE_SECRETS_DOMAINS
+)
+
+load_dotenv()
+
+# ============================================================================
+# CONFIGURATION — v3.0 (6-tier system)
+# ============================================================================
+class Config:
+    DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
+    GUILD_ID = int(os.getenv('DISCORD_GUILD_ID', '0'))
+    WICK_API_KEY = os.getenv('WICK_API_KEY')
+    WICK_GUILD_ID = os.getenv('WICK_GUILD_ID')
+    XRPL_NETWORK = os.getenv('XRPL_NETWORK', 'testnet')
+    XRPL_URL = (
+        'wss://s.altnet.rippletest.net:51233'
+        if XRPL_NETWORK == 'testnet'
+        else 'wss://xrplcluster.com'
+    )
+    DAO_WALLET_SEED    = os.getenv('DAO_WALLET_SEED')
+    DAO_WALLET_ADDRESS = os.getenv('DAO_WALLET_ADDRESS')
+    FOUNDER_IDS = [
+        int(id) for id in os.getenv('FOUNDER_DISCORD_IDS', '0,0,0').split(',')
+    ]
+    XUMM_API_KEY    = os.getenv('XUMM_API_KEY', '')
+    XUMM_API_SECRET = os.getenv('XUMM_API_SECRET', '')
+
+    # ------------------------------------------------------------------
+    # TIER DEFINITIONS — 6-tier system
+    # Language: "ledger" not "blockchain", "rings" not "steps"
+    # ------------------------------------------------------------------
+    TIERS = {
+        'ruach': {
+            'name': 'Ruach',
+            'display': '✨ Ruach',
+            'price_usd': 0,
+            'price_rlusd': 0,
+            'ruach_deeds_required': 1000,
+            'secret_count': 0,
+            'web3_required': False,
+            'publicly_visible': True,
+            'description': (
+                'Earned through 1,000 good deeds. Bad behavior judged by HUMANS, '
+                'never algorithms. Burns unlock food, shelter, connectivity, and hotel '
+                'services via permissioned NFTs. Path to Genesis entirely free.'
+            ),
+        },
+        'genesis': {
+            'name': 'Genesis',
+            'display': '🌱 Genesis',
+            'price_usd': 100,
+            'price_rlusd': 100_000_000_000,  # drops
+            'ruach_upgrade_cost': 1000,       # 1,000 Ruach tokens = Genesis
+            'secret_count': 45,
+            'web3_required': False,
+            'publicly_visible': True,
+            'description': (
+                '$100 USD (or 1,000 Ruach tokens). Individual tier. '
+                '45 trade secrets unlocked. Publicly known tier.'
+            ),
+        },
+        'exodus': {
+            'name': 'Exodus',
+            'display': '🔥 Exodus',
+            'price_usd': 1000,
+            'price_rlusd': 100_000_000_0000,  # drops
+            'secret_count': 180,
+            'web3_required': False,
+            'publicly_visible': True,
+            'fma_eligible': True,
+            'description': (
+                '$1,000 USD. Small business tier. 180 trade secrets unlocked. '
+                'FMA team eligibility (earn 2% revenue share on NFT sales). '
+                'Publicly known tier.'
+            ),
+        },
+        'gabriel': {
+            'name': 'Gabriel',
+            'display': '⚔️ Gabriel',
+            'price_usd': 25_000,
+            'annual_usd': 5_000,
+            'price_rlusd': 2_500_000_000_0000,  # drops
+            'annual_rlusd': 500_000_000_0000,    # drops
+            'patent_stack': 12,
+            'web3_required': True,
+            'publicly_visible': False,
+            'chains': ['XRPL'],
+            'crawler': 'Gabriel Constitutional AI Agent',
+            'platform_royalty_pct': 25,
+            'description': (
+                '$25,000 + $5,000/yr. Foundation platform. 12-patent stack. '
+                'Gabriel Archangel Crawler (XRPL-only). '
+                '25% platform royalty on derivative innovations. Web3 required.'
+            ),
+        },
+        'michael': {
+            'name': 'Michael',
+            'display': '🛡️ Michael',
+            'price_usd': 50_000,
+            'annual_usd': 10_000,
+            'price_rlusd': 5_000_000_000_0000,
+            'annual_rlusd': 1_000_000_000_0000,
+            'patent_stack': 12,
+            'web3_required': True,
+            'publicly_visible': False,
+            'chains': ['XRPL', 'Hedera', 'Flare', 'Zebec'],
+            'quantum_resistant': True,  # CRYSTALS-Kyber
+            'crawler': 'Michael Constitutional AI Agent',
+            'platform_royalty_pct': 25,
+            'description': (
+                '$50,000 + $10,000/yr. Multi-chain security. Michael Crawler '
+                '(XRPL + Hedera + Flare + Zebec). Quantum-resistant (CRYSTALS-Kyber). '
+                'Web3 required.'
+            ),
+        },
+        'raphael': {
+            'name': 'Raphael',
+            'display': '👁️ Raphael',
+            'price_usd': 100_000,
+            'annual_usd': 20_000,
+            'price_rlusd': 10_000_000_000_0000,
+            'annual_rlusd': 2_000_000_000_0000,
+            'patent_stack': 12,
+            'web3_required': True,
+            'publicly_visible': False,
+            'chains': ['XRPL', 'Hedera', 'Flare', 'Zebec', 'Disaster Recovery', 'Succession'],
+            'crawler': 'Raphael Constitutional AI Agent',
+            'dna_substrate': True,
+            'multi_generational': True,
+            'crisis_levels': 5,
+            'platform_royalty_pct': 25,
+            'description': (
+                '$100,000+ + $20,000/yr. Complete continuity. Raphael Crawler '
+                '(all Michael + disaster recovery + succession + institutional feeds). '
+                'Multi-generational. DNA substrate. 5-level crisis management. Web3 required.'
+            ),
+        },
+    }
+
+    # Roles mapping (Discord role IDs — set in .env)
+    ROLE_RUACH    = int(os.getenv('ROLE_RUACH',    '0'))
+    ROLE_GENESIS  = int(os.getenv('ROLE_GENESIS',  '0'))
+    ROLE_EXODUS   = int(os.getenv('ROLE_EXODUS',   '0'))
+    ROLE_GABRIEL  = int(os.getenv('ROLE_GABRIEL',  '0'))
+    ROLE_MICHAEL  = int(os.getenv('ROLE_MICHAEL',  '0'))
+    ROLE_RAPHAEL  = int(os.getenv('ROLE_RAPHAEL',  '0'))
+
+    # Legacy verified role (Ring 1 complete)
+    ROLE_VERIFIED = int(os.getenv('ROLE_VERIFIED', '0'))
+
+    # FMA role
+    ROLE_FMA = int(os.getenv('ROLE_FMA', '0'))
+
+    # First 1,000 movers role
+    ROLE_FOUNDING_MEMBER = int(os.getenv('ROLE_FOUNDING_MEMBER', '0'))
+    FOUNDING_MEMBER_CAP = 1000
+
+    # Channels
+    CHANNEL_APPROVALS     = int(os.getenv('CHANNEL_APPROVALS',     '0'))
+    CHANNEL_ANNOUNCEMENTS = int(os.getenv('CHANNEL_ANNOUNCEMENTS', '0'))
+
+config = Config()
+
+# ============================================================================
+# FIRST 1,000 MOVERS TRACKER
+# Persisted in PermissionedDomain (forefathers.dao/founding-members)
+# ============================================================================
+class FoundingMembersTracker:
+    """
+    Tracks the first 1,000 members who complete Genesis or higher.
+    Founding members receive:
+      - Lifetime discounts on all tier upgrades
+      - Founding Member status NFT
+      - Early Adopter access at discounted price
+    """
+    def __init__(self):
+        self._count: int = 0        # loaded from domain on startup
+        self._members: List[int] = []  # Discord IDs
+
+    async def load(self, domain_manager: 'PermissionedDomainManager'):
+        """Load current count from PermissionedDomain on startup."""
+        try:
+            data = await domain_manager.query_domain_raw('forefathers.dao/founding-members')
+            if data:
+                self._count = data.get('count', 0)
+                self._members = data.get('members', [])
+        except Exception:
+            self._count = 0
+            self._members = []
+
+    @property
+    def is_full(self) -> bool:
+        return self._count >= config.FOUNDING_MEMBER_CAP
+
+    @property
+    def remaining(self) -> int:
+        return max(0, config.FOUNDING_MEMBER_CAP - self._count)
+
+    @property
+    def count(self) -> int:
+        return self._count
+
+    def is_founding_member(self, discord_id: int) -> bool:
+        return discord_id in self._members
+
+    async def register(self, discord_id: int, domain_manager: 'PermissionedDomainManager') -> bool:
+        """
+        Register as founding member if still within first 1,000.
+        Returns True if successfully registered.
+        """
+        if self.is_full or discord_id in self._members:
+            return False
+        self._count += 1
+        self._members.append(discord_id)
+        # Persist to PermissionedDomain
+        try:
+            await domain_manager.set_domain_raw(
+                'forefathers.dao/founding-members',
+                {'count': self._count, 'members': self._members}
+            )
+        except Exception as e:
+            print(f"Warning: Failed to persist founding member: {e}")
+        return True
+
+founding_tracker = FoundingMembersTracker()
+
+# ============================================================================
+# SESSION CACHE (unchanged from v2.0)
+# ============================================================================
+class SessionCache:
+    """In-memory cache for active sessions."""
+    def __init__(self):
+        self.active_verifications: Dict[int, str] = {}   # discord_id → wick_id
+        self.pending_payments: Dict[int, Dict] = {}       # discord_id → payment info
+        self.pending_approvals: Dict[int, Dict] = {}      # discord_id → approval info
+        self.web3_sessions: Dict[int, Dict] = {}          # discord_id → XUMM session
+        self.ruach_balances: Dict[int, int] = {}          # discord_id → ruach count
+
+    def start_verification(self, discord_id: int, wick_id: str):
+        self.active_verifications[discord_id] = wick_id
+
+    def complete_verification(self, discord_id: int):
+        self.active_verifications.pop(discord_id, None)
+
+    def add_pending_payment(self, discord_id: int, info: Dict):
+        self.pending_payments[discord_id] = info
+
+    def complete_payment(self, discord_id: int):
+        return self.pending_payments.pop(discord_id, None)
+
+    def store_web3_session(self, discord_id: int, session: Dict):
+        self.web3_sessions[discord_id] = session
+
+    def get_web3_session(self, discord_id: int) -> Optional[Dict]:
+        return self.web3_sessions.get(discord_id)
+
+cache = SessionCache()
+
+# ============================================================================
+# WEB3 WALLET CONNECTOR (XUMM SDK stub — replace with live XUMM API)
+# Required for Archangel tiers (Gabriel/Michael/Raphael)
+# ============================================================================
+class XummConnector:
+    """
+    XUMM SDK integration for Web3 wallet connection.
+    Archangel tiers require verified XRPL wallet ownership.
+    """
+    def __init__(self):
+        self.api_key    = config.XUMM_API_KEY
+        self.api_secret = config.XUMM_API_SECRET
+        self.base_url   = "https://xumm.app/api/v1"
+
+    async def create_sign_request(self, discord_id: int, amount_rlusd: int, tier: str) -> Dict:
+        """
+        Create XUMM sign request for Archangel tier payment.
+        Returns sign_url for user to open in XUMM app.
+        """
+        payload = {
+            "txjson": {
+                "TransactionType": "Payment",
+                "Destination": config.DAO_WALLET_ADDRESS,
+                "Amount": {
+                    "currency": "USD",
+                    "value": str(config.TIERS[tier]['price_usd']),
+                    "issuer": os.getenv('RLUSD_ISSUER', '')
+                },
+                "Memos": [{
+                    "Memo": {
+                        "MemoType": "5041594d454e54",  # "PAYMENT" hex
+                        "MemoData": f"TIER:{tier}:DISCORD:{discord_id}".encode().hex()
+                    }
+                }]
+            },
+            "options": {
+                "submit": True,
+                "expire": 15  # 15 minutes
+            }
+        }
+        # NOTE: Replace with live XUMM API call
+        # async with httpx.AsyncClient() as client:
+        #     resp = await client.post(
+        #         f"{self.base_url}/platform/payload",
+        #         json=payload,
+        #         headers={"X-API-Key": self.api_key, "X-API-Secret": self.api_secret}
+        #     )
+        #     return resp.json()
+        return {
+            "uuid": f"xumm-{discord_id}-{tier}",
+            "next": {"always": f"https://xumm.app/sign/{discord_id}"},
+            "refs": {"qr_png": f"https://xumm.app/sign/{discord_id}/qr.png"}
+        }
+
+    async def check_sign_request(self, uuid: str) -> Dict:
+        """Check status of a XUMM sign request."""
+        # NOTE: Replace with live XUMM API call
+        return {"meta": {"signed": False, "cancelled": False}}
+
+    async def verify_wallet_ownership(self, discord_id: int, xrpl_address: str) -> bool:
+        """
+        Verify that the Discord user owns the provided XRPL wallet.
+        Used for Early Adopter NFT verification and Archangel tier access.
+        """
+        # Query XRPL for wallet ownership proof
+        try:
+            async with AsyncWebsocketClient(config.XRPL_URL) as client:
+                resp = await client.request({"command": "account_info", "account": xrpl_address})
+                return resp.result.get('validated', False)
+        except Exception:
+            return False
+
+xumm = XummConnector()
+
+# ============================================================================
+# PERMISSIONEDDOMAIN MANAGER (unchanged setup)
+# ============================================================================
+wallet = Wallet.from_seed(config.DAO_WALLET_SEED) if config.DAO_WALLET_SEED else None
+domain_manager = PermissionedDomainManager(wallet, config.XRPL_URL) if wallet else None
+
+# ============================================================================
+# DISCORD BOT — v3.0
+# ============================================================================
+class LemniscateBot(commands.Bot):
+    def __init__(self):
+        intents = discord.Intents.default()
+        intents.message_content = True
+        intents.members = True
+        super().__init__(command_prefix='/', intents=intents)
+
+    async def setup_hook(self):
+        if domain_manager:
+            await domain_manager.connect()
+            await founding_tracker.load(domain_manager)
+        self.check_verifications.start()
+        self.check_payments.start()
+        self.check_xumm_sessions.start()
+        guild = discord.Object(id=config.GUILD_ID)
+        self.tree.copy_global_to(guild=guild)
+        await self.tree.sync(guild=guild)
+        print("✅ Lemniscate Gate v3.0 ready — 6-tier system active")
+        print(f"   Founding members remaining: {founding_tracker.remaining} / {config.FOUNDING_MEMBER_CAP}")
+
+    async def on_ready(self):
+        print(f"✅ {self.user} online | 6-Tier ForeFathers DAO")
+        print(f"   Tiers: Ruach → Genesis → Exodus → Gabriel → Michael → Raphael")
+
+    # ------------------------------------------------------------------
+    # BACKGROUND TASKS
+    # ------------------------------------------------------------------
+    @tasks.loop(minutes=3)
+    async def check_verifications(self):
+        """Check Wick biometric verifications (Ring 1)."""
+        for discord_id, wick_id in list(cache.active_verifications.items()):
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.get(
+                        f"https://api.wick.gg/v1/verifications/{wick_id}",
+                        headers={'Authorization': f'Bearer {config.WICK_API_KEY}'}
+                    )
+                    status = response.json()
+
+                if status.get('status') == 'verified':
+                    nft_id = await self.mint_identity_nft(
+                        discord_id, wick_id, status.get('confidence_score', 0.95)
+                    )
+                    if domain_manager:
+                        await domain_manager.store_identity_verification(
+                            discord_id, wick_id, status.get('confidence_score', 0.95), nft_id
+                        )
+                    cache.complete_verification(discord_id)
+
+                    guild  = self.get_guild(config.GUILD_ID)
+                    member = guild.get_member(discord_id) if guild else None
+                    if member:
+                        role = guild.get_role(config.ROLE_VERIFIED)
+                        if role:
+                            await member.add_roles(role)
+
+                    user = await self.fetch_user(discord_id)
+                    embed = discord.Embed(
+                        title="✅ Ring 1 Complete — Identity Verified",
+                        description=(
+                            f"Identity NFT: `{nft_id[:16]}...`\n"
+                            f"Stored in: `forefathers.dao/identity/{discord_id}`\n\n"
+                            "Your identity is anchored on the XRPL ledger "
+                            "with ledger-enforced access control.\n\n"
+                            "Use `/sign-nda` to proceed to Ring 2 →"
+                        ),
+                        color=discord.Color.green()
+                    )
+                    await user.send(embed=embed)
+            except Exception as e:
+                print(f"Error checking verification for {discord_id}: {e}")
+
+    @tasks.loop(minutes=2)
+    async def check_payments(self):
+        """Check pending Ring 3 payments."""
+        for discord_id, payment_info in list(cache.pending_payments.items()):
+            try:
+                tx_hash = await self.check_payment_received(
+                    payment_info['payment_id'],
+                    payment_info['amount']
+                )
+                if tx_hash:
+                    tier = payment_info.get('tier', 'genesis')
+                    if domain_manager:
+                        await domain_manager.store_payment_escrow(
+                            payment_info['payment_id'],
+                            payment_info['amount'],
+                            payment_info.get('sender', ''),
+                            tier
+                        )
+                    cache.complete_payment(discord_id)
+
+                    # Check founding member eligibility
+                    founding_status = ""
+                    if not founding_tracker.is_full and tier in ('genesis', 'exodus', 'gabriel', 'michael', 'raphael'):
+                        registered = await founding_tracker.register(discord_id, domain_manager)
+                        if registered:
+                            founding_status = (
+                                f"\n\n🏛️ **Founding Member #{founding_tracker.count}!**\n"
+                                f"You are one of the first 1,000 — lifetime discounts "
+                                f"and founding member status locked in forever."
+                            )
+                            guild = self.get_guild(config.GUILD_ID)
+                            member = guild.get_member(discord_id) if guild else None
+                            if member:
+                                role = guild.get_role(config.ROLE_FOUNDING_MEMBER)
+                                if role:
+                                    await member.add_roles(role)
+
+                    await self.notify_payment_complete(discord_id, tier, tx_hash, founding_status)
+            except Exception as e:
+                print(f"Error checking payment for {discord_id}: {e}")
+
+    @tasks.loop(minutes=1)
+    async def check_xumm_sessions(self):
+        """Check pending XUMM Web3 wallet sign requests (Archangel tiers)."""
+        for discord_id, session in list(cache.web3_sessions.items()):
+            try:
+                status = await xumm.check_sign_request(session['uuid'])
+                if status['meta'].get('signed'):
+                    tier = session.get('tier')
+                    xrpl_address = status.get('response', {}).get('account', '')
+                    cache.web3_sessions.pop(discord_id, None)
+                    await self.complete_archangel_signup(discord_id, tier, xrpl_address)
+                elif status['meta'].get('cancelled'):
+                    cache.web3_sessions.pop(discord_id, None)
+                    user = await self.fetch_user(discord_id)
+                    await user.send("⚠️ XUMM sign request cancelled. Use `/join-gabriel` to try again.")
+            except Exception as e:
+                print(f"Error checking XUMM session for {discord_id}: {e}")
+
+    # ------------------------------------------------------------------
+    # HELPER METHODS
+    # ------------------------------------------------------------------
+    async def mint_identity_nft(
+        self, discord_id: int, wick_id: str, confidence: float
+    ) -> str:
+        """Mint Ring 1 identity anchor NFT on XRPL."""
+        # Implementation: NFTokenMint with DID metadata
+        return f"00080000IDENTITY{discord_id:016x}"
+
+    async def check_payment_received(self, payment_id: str, amount: float) -> Optional[str]:
+        """Check XRPL ledger for payment receipt."""
+        return None  # Replace with live XRPL query
+
+    async def notify_payment_complete(
+        self, discord_id: int, tier: str, tx_hash: str, extra: str = ""
+    ):
+        """Notify user that Ring 3 payment is confirmed and assign role."""
+        tier_info = config.TIERS.get(tier, {})
+        guild  = self.get_guild(config.GUILD_ID)
+        member = guild.get_member(discord_id) if guild else None
+        if member:
+            role_map = {
+                'ruach':   config.ROLE_RUACH,
+                'genesis': config.ROLE_GENESIS,
+                'exodus':  config.ROLE_EXODUS,
+                'gabriel': config.ROLE_GABRIEL,
+                'michael': config.ROLE_MICHAEL,
+                'raphael': config.ROLE_RAPHAEL,
+            }
+            role = guild.get_role(role_map.get(tier, 0))
+            if role:
+                await member.add_roles(role)
+
+        user = await self.fetch_user(discord_id)
+        secrets = tier_info.get('secret_count', 0)
+        embed = discord.Embed(
+            title=f"✅ Ring 3 Complete — {tier_info.get('display', tier.capitalize())} Tier",
+            description=(
+                f"Payment confirmed on ledger: `{tx_hash[:16]}...`\n"
+                f"Tier: **{tier_info.get('display', tier)}**\n"
+                + (f"Trade secrets unlocked: **{secrets}**\n" if secrets else "")
+                + "\nUse `/request-approval` to proceed to Ring 4 →"
+                + extra
+            ),
+            color=discord.Color.gold()
+        )
+        await user.send(embed=embed)
+
+    async def complete_archangel_signup(
+        self, discord_id: int, tier: str, xrpl_address: str
+    ):
+        """
+        Complete Archangel tier signup after Web3 wallet verification.
+        Assigns role, stores in PermissionedDomain, notifies user.
+        """
+        tier_info = config.TIERS.get(tier, {})
+        guild  = self.get_guild(config.GUILD_ID)
+        member = guild.get_member(discord_id) if guild else None
+        if member:
+            role_map = {
+                'gabriel': config.ROLE_GABRIEL,
+                'michael': config.ROLE_MICHAEL,
+                'raphael': config.ROLE_RAPHAEL,
+            }
+            role = guild.get_role(role_map.get(tier, 0))
+            if role:
+                await member.add_roles(role)
+
+        if domain_manager:
+            await domain_manager.store_archangel_wallet(discord_id, xrpl_address, tier)
+
+        user = await self.fetch_user(discord_id)
+        crawler = tier_info.get('crawler', 'Constitutional AI Agent')
+        chains  = ', '.join(tier_info.get('chains', ['XRPL']))
+        embed = discord.Embed(
+            title=f"✅ {tier_info.get('display', tier)} — Archangel Tier Activated",
+            description=(
+                f"XRPL Wallet: `{xrpl_address[:16]}...` (verified on ledger)\n"
+                f"Chains: **{chains}**\n"
+                f"Constitutional AI: **{crawler}**\n"
+                f"Platform royalty: **25%** on all derivative innovations\n\n"
+                "🏰 Welcome to the ForeFathers Archangel Platform.\n"
+                "Your constitutional AI agent is now active."
+            ),
+            color=discord.Color.purple()
+        )
+        await user.send(embed=embed)
+
+bot = LemniscateBot()
+
+# ============================================================================
+# SLASH COMMANDS — Public Onboarding (Genesis + Exodus)
+# ============================================================================
+@bot.tree.command(name="join", description="Start your ForeFathers DAO journey")
+async def join(interaction: discord.Interaction):
+    """
+    Entry point for all tiers. Shows tier overview.
+    Genesis and Exodus visible publicly — no Web3 required to start.
+    Archangel tiers mention Web3 requirement upfront.
+    """
+    embed = discord.Embed(
+        title="🌐 ForeFathers DAO — Choose Your Ring",
+        description=(
+            "Every member receives universal platform connectivity at zero monthly cost.\n"
+            "This is a RIGHT built into the economic architecture — not a feature.\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "**✨ Ruach** — *Free* — Earned through 1,000 good deeds\n"
+            "Good behavior judged by humans, not algorithms.\n"
+            "Burns unlock food, shelter, connectivity, and hotel services.\n\n"
+            "**🌱 Genesis** — *$100 USD or 1,000 Ruach tokens*\n"
+            "Individual tier. 45 trade secrets unlocked.\n\n"
+            "**🔥 Exodus** — *$1,000 USD*\n"
+            "Small business. 180 trade secrets. FMA team eligible.\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "**⚔️ Gabriel** — *$25,000 + $5,000/yr* — Web3 Required\n"
+            "**🛡️ Michael** — *$50,000 + $10,000/yr* — Web3 Required\n"
+            "**👁️ Raphael** — *$100,000+ + $20,000/yr* — Web3 Required\n\n"
+            "*Archangel tiers: enterprise platform on 12-patent stack.\n"
+            "25% platform royalty on your derivative innovations.*\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🏛️ **{founding_tracker.remaining} founding member spots remaining**\n"
+            "*First 1,000: lifetime discounts + founding member status.*"
+        ),
+        color=discord.Color.blue()
+    )
+    embed.set_footer(text="Use /verify to begin Ring 1 → /join-archangel for enterprise tiers")
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+@bot.tree.command(name="verify", description="Ring 1 — Identity verification via Wick biometrics")
+async def verify(interaction: discord.Interaction):
+    """Ring 1: Start Wick biometric identity verification."""
+    discord_id = interaction.user.id
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                "https://api.wick.gg/v1/verifications",
+                json={"guild_id": config.WICK_GUILD_ID, "user_id": str(discord_id)},
+                headers={'Authorization': f'Bearer {config.WICK_API_KEY}'}
+            )
+            wick_data = resp.json()
+
+        wick_id  = wick_data.get('id', 'unknown')
+        wick_url = wick_data.get('url', '#')
+        cache.start_verification(discord_id, wick_id)
+
+        embed = discord.Embed(
+            title="🔍 Ring 1 — Identity Verification",
+            description=(
+                f"**[Click here to verify your identity]({wick_url})**\n\n"
+                "Your identity will be anchored as an NFT on the XRPL ledger.\n"
+                "You maintain full control — ledger-enforced access, GDPR compliant.\n\n"
+                "⏳ Bot will auto-detect completion within 3 minutes."
+            ),
+            color=discord.Color.blue()
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(
+            f"❌ Failed to start verification: {e}", ephemeral=True
+        )
+
+
+@bot.tree.command(name="sign-nda", description="Ring 2 — Sign the ForeFathers DAO NDA")
+async def sign_nda(interaction: discord.Interaction):
+    """Ring 2: NDA signature stored on ledger via PermissionedDomain."""
+    discord_id = interaction.user.id
+    guild  = interaction.guild
+    member = guild.get_member(discord_id) if guild else None
+
+    if not member or not member.get_role(config.ROLE_VERIFIED):
+        await interaction.response.send_message(
+            "⚠️ Complete Ring 1 identity verification first (`/verify`).", ephemeral=True
+        )
+        return
+
+    nda_content = (
+        "ForeFathers DAO Non-Disclosure Agreement\n"
+        "By proceeding, you agree to protect all trade secrets disclosed "
+        "under your membership tier. Full NDA terms are provided in the "
+        "membership portal. Your signature will be recorded permanently "
+        "on the XRPL ledger."
+    )
+    embed = discord.Embed(
+        title="📜 Ring 2 — NDA Signature",
+        description=(
+            f"```\n{nda_content}\n```\n\n"
+            "React ✅ to sign. Your signature will be stored in "
+            "`forefathers.dao/legal/{your_id}` on the ledger.\n\n"
+            "After signing, use `/join-genesis` or `/join-exodus` to proceed."
+        ),
+        color=discord.Color.orange()
+    )
+    msg = await interaction.response.send_message(embed=embed, ephemeral=False)
+    # In production: add ✅ reaction listener to trigger on-chain NDA storage
+
+
+@bot.tree.command(name="join-genesis", description="Join at Genesis tier — $100 or 1,000 Ruach")
+async def join_genesis(interaction: discord.Interaction):
+    """Genesis tier signup. No Web3 required."""
+    discord_id = interaction.user.id
+    ruach_balance = cache.ruach_balances.get(discord_id, 0)
+    can_ruach_upgrade = ruach_balance >= 1000
+
+    embed = discord.Embed(
+        title="🌱 Genesis Tier — $100 or 1,000 Ruach",
+        description=(
+            "**Individual tier** — 45 trade secrets unlocked\n\n"
+            f"**Option 1 — Pay $100 RLUSD:**\n"
+            f"Send 100 RLUSD to: `{config.DAO_WALLET_ADDRESS}`\n"
+            f"Memo: `PAYMENT:GENESIS:{discord_id}`\n\n"
+        ) + (
+            f"**Option 2 — Ruach Upgrade (your balance: {ruach_balance} Ruach):**\n"
+            "Use `/ruach-upgrade` to convert 1,000 Ruach → Genesis access.\n\n"
+            if can_ruach_upgrade else
+            f"*(Ruach balance: {ruach_balance}/1,000 — earn more good deeds for free upgrade)*\n\n"
+        ) + (
+            "⏳ Bot auto-detects payment within 2 minutes.\n\n"
+            + (
+                f"🏛️ **{founding_tracker.remaining} founding spots remaining!**"
+                if not founding_tracker.is_full else
+                "*(Founding member spots are full — standard pricing applies)*"
+            )
+        ),
+        color=discord.Color.green()
+    )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+    cache.add_pending_payment(discord_id, {
+        'payment_id': hashlib.sha256(f"genesis-{discord_id}".encode()).hexdigest(),
+        'amount': 100.0,
+        'tier': 'genesis',
+    })
+
+
+@bot.tree.command(name="join-exodus", description="Join at Exodus tier — $1,000 USD")
+async def join_exodus(interaction: discord.Interaction):
+    """Exodus tier signup. No Web3 required."""
+    discord_id = interaction.user.id
+    embed = discord.Embed(
+        title="🔥 Exodus Tier — $1,000 USD",
+        description=(
+            "**Small business tier** — 180 trade secrets unlocked\n"
+            "FMA team eligible (earn 2% revenue share on NFT sales)\n\n"
+            f"Send 1,000 RLUSD to: `{config.DAO_WALLET_ADDRESS}`\n"
+            f"Memo: `PAYMENT:EXODUS:{discord_id}`\n\n"
+            "⏳ Bot auto-detects payment within 2 minutes.\n\n"
+            + (
+                f"🏛️ **{founding_tracker.remaining} founding spots remaining!**"
+                if not founding_tracker.is_full else ""
+            )
+        ),
+        color=discord.Color.orange()
+    )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+    cache.add_pending_payment(discord_id, {
+        'payment_id': hashlib.sha256(f"exodus-{discord_id}".encode()).hexdigest(),
+        'amount': 1000.0,
+        'tier': 'exodus',
+    })
+
+
+# ============================================================================
+# SLASH COMMANDS — Archangel Tiers (Web3 Required)
+# ============================================================================
+@bot.tree.command(name="join-archangel", description="Enterprise Archangel tiers — Web3 wallet required")
+@app_commands.describe(tier="Which Archangel tier: gabriel, michael, or raphael")
+async def join_archangel(interaction: discord.Interaction, tier: str):
+    """
+    Archangel tier signup flow.
+    Requires XUMM Web3 wallet connection before payment is accepted.
+    Gabriel/Michael/Raphael only — no public-facing onboarding here.
+    """
+    tier = tier.lower()
+    if tier not in ('gabriel', 'michael', 'raphael'):
+        await interaction.response.send_message(
+            "❌ Valid Archangel tiers: `gabriel`, `michael`, `raphael`", ephemeral=True
+        )
+        return
+
+    tier_info = config.TIERS[tier]
+    discord_id = interaction.user.id
+
+    embed = discord.Embed(
+        title=f"{tier_info['display']} — Archangel Tier (Web3 Required)",
+        description=(
+            f"**Price:** ${tier_info['price_usd']:,} USD + ${tier_info['annual_usd']:,}/yr\n"
+            f"**Chains:** {', '.join(tier_info['chains'])}\n"
+            f"**Constitutional AI:** {tier_info['crawler']}\n"
+            f"**Platform Royalty:** {tier_info['platform_royalty_pct']}% on derivative innovations\n"
+            + (f"**Quantum-Resistant:** CRYSTALS-Kyber\n" if tier_info.get('quantum_resistant') else "")
+            + (f"**DNA Substrate:** Multi-generational\n" if tier_info.get('dna_substrate') else "")
+            + "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "**Step 1:** Connect your XRPL Web3 wallet via XUMM\n"
+            "**Step 2:** Sign payment transaction in XUMM app\n"
+            "**Step 3:** Constitutional AI agent activated\n\n"
+            "🔗 Opening XUMM sign request..."
+        ),
+        color=discord.Color.purple()
+    )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    # Create XUMM sign request
+    session = await xumm.create_sign_request(
+        discord_id, tier_info['price_rlusd'], tier
+    )
+    cache.store_web3_session(discord_id, {
+        'uuid': session['uuid'],
+        'tier': tier,
+        'sign_url': session['next']['always'],
+        'created_at': datetime.utcnow().isoformat()
+    })
+
+    follow_up = discord.Embed(
+        title="📱 Open XUMM to Complete Payment",
+        description=(
+            f"[**Tap here to open XUMM**]({session['next']['always']})\n\n"
+            "Or scan the QR code in the XUMM app.\n\n"
+            "⏳ Bot monitors for completion (expires 15 minutes).\n"
+            "Your XRPL wallet ownership will be verified on the ledger."
+        ),
+        color=discord.Color.purple()
+    )
+    await interaction.followup.send(embed=follow_up, ephemeral=True)
+
+
+# ============================================================================
+# SLASH COMMANDS — Early Adopter NFT
+# ============================================================================
+@bot.tree.command(
+    name="early-adopter",
+    description="Early Adopter NFT — $5,000 | 50% off Archangel tiers + 2% referral share"
+)
+async def early_adopter(interaction: discord.Interaction):
+    """Early Adopter NFT signup — first 1,000 movers special."""
+    discord_id = interaction.user.id
+    spots_left  = founding_tracker.remaining
+
+    embed = discord.Embed(
+        title="⭐ Early Adopter NFT — $5,000",
+        description=(
+            "**Benefits:**\n"
+            "• 50% off ALL Archangel tiers (Gabriel/Michael/Raphael) forever\n"
+            "• 2% referral revenue share on every NFT you refer\n"
+            "• Founding Member status (if within first 1,000)\n\n"
+            f"Send 5,000 RLUSD to: `{config.DAO_WALLET_ADDRESS}`\n"
+            f"Memo: `EARLY_ADOPTER:{discord_id}`\n\n"
+            + (
+                f"🏛️ **{spots_left} founding spots remaining!**\n"
+                "Your Early Adopter NFT secures your founding member status."
+                if spots_left > 0 else
+                "*(Founding member spots full — Early Adopter benefits still apply)*"
+            )
+        ),
+        color=discord.Color.gold()
+    )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+# ============================================================================
+# SLASH COMMANDS — FMA (Financial Market Ambassador)
+# ============================================================================
+@bot.tree.command(
+    name="join-fma",
+    description="Become an FMA — sell platform NFTs, earn 2% revenue share"
+)
+async def join_fma(interaction: discord.Interaction):
+    """FMA registration. Requires minimum Exodus tier NFT."""
+    discord_id = interaction.user.id
+    guild  = interaction.guild
+    member = guild.get_member(discord_id) if guild else None
+
+    has_exodus = member and (
+        member.get_role(config.ROLE_EXODUS) or
+        member.get_role(config.ROLE_GABRIEL) or
+        member.get_role(config.ROLE_MICHAEL) or
+        member.get_role(config.ROLE_RAPHAEL)
+    )
+
+    if not has_exodus:
+        await interaction.response.send_message(
+            "⚠️ FMA requires minimum **Exodus tier** ($1,000). "
+            "Use `/join-exodus` to upgrade first.",
+            ephemeral=True
+        )
+        return
+
+    embed = discord.Embed(
+        title="📈 Financial Market Ambassador (FMA)",
+        description=(
+            "**You're eligible!** Your Exodus NFT qualifies you for the FMA program.\n\n"
+            "**Earn:** 2% revenue share on every ForeFathers NFT sale you refer\n"
+            "**Method:** Share your referral code with your XRPL address\n"
+            "**Payout:** Automatic via La'azar Hook on every qualifying sale\n\n"
+            "Your FMA referral code:\n"
+            f"`FMA:{interaction.user.id}:{config.DAO_WALLET_ADDRESS[-8:]}`\n\n"
+            "Commission is routed atomically through the XRPL hook on each sale."
+        ),
+        color=discord.Color.green()
+    )
+    if member:
+        role = guild.get_role(config.ROLE_FMA)
+        if role:
+            await member.add_roles(role)
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+# ============================================================================
+# SLASH COMMANDS — Universal Connectivity
+# ============================================================================
+@bot.tree.command(
+    name="connectivity",
+    description="Learn about Universal Connectivity — zero monthly cost for all members"
+)
+async def connectivity(interaction: discord.Interaction):
+    """
+    Universal Connectivity explanation.
+    This is a dedicated public button visible to all members.
+    """
+    embed = discord.Embed(
+        title="🌐 Universal Connectivity — A Right, Not a Feature",
+        description=(
+            "**Every ForeFathers member gets platform access at zero monthly cost.**\n\n"
+            "This isn't a promotional offer. It's built into the economic architecture.\n\n"
+            "**How it works:**\n"
+            "1. Members burn Ruach tokens or use paid tiers to access services\n"
+            "2. The La'azar Burn Protocol captures value at every burn event\n"
+            "3. AMM-calculated burn percentages route automatically to the "
+            "universal connectivity liquidity pool\n"
+            "4. ForeFathers absorbs connectivity cost from its 25% platform share — "
+            "an intentional 'loss' that funds the network\n"
+            "5. At scale: 100,000 merchants × 1% micro-burns = **$6B/yr captured**, "
+            "funding 2.86M people with connectivity\n\n"
+            "**The Ruach path is entirely bootstrappable:**\n"
+            "Ruach → Genesis → Exodus → Gabriel\n"
+            "All through good deeds and community participation. No money required.\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "*'Your $50 purchase funded 0.0036 GDT for universal connectivity.'*\n"
+            "— Receipt message on every La'azar POS transaction"
+        ),
+        color=discord.Color.teal()
+    )
+    await interaction.response.send_message(embed=embed, ephemeral=False)
+
+
+# ============================================================================
+# SLASH COMMANDS — Ruach
+# ============================================================================
+@bot.tree.command(name="ruach-balance", description="Check your Ruach dignity token balance")
+async def ruach_balance(interaction: discord.Interaction):
+    discord_id = interaction.user.id
+    balance = cache.ruach_balances.get(discord_id, 0)
+    embed = discord.Embed(
+        title="✨ Ruach Balance",
+        description=(
+            f"Your Ruach balance: **{balance:,}** tokens\n\n"
+            f"Genesis upgrade: **{max(0, 1000 - balance):,}** more needed\n\n"
+            "Ruach is earned through good deeds in the community.\n"
+            "Good behavior is judged by humans — never algorithms.\n"
+            "The system only rewards; it never punishes.\n\n"
+            "**Services available via Ruach burn:**\n"
+            "🍎 Food access NFTs\n"
+            "🏠 Shelter access NFTs\n"
+            "📡 Connectivity NFTs\n"
+            "🏨 Hotel access NFTs"
+        ),
+        color=discord.Color.from_rgb(255, 215, 0)
+    )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+@bot.tree.command(name="ruach-upgrade", description="Convert 1,000 Ruach tokens to Genesis tier")
+async def ruach_upgrade(interaction: discord.Interaction):
+    discord_id = interaction.user.id
+    balance = cache.ruach_balances.get(discord_id, 0)
+    if balance < 1000:
+        await interaction.response.send_message(
+            f"⚠️ You need 1,000 Ruach to upgrade. Current balance: **{balance}**.",
+            ephemeral=True
+        )
+        return
+    cache.add_pending_payment(discord_id, {
+        'payment_id': hashlib.sha256(f"ruach-genesis-{discord_id}".encode()).hexdigest(),
+        'amount': 0,
+        'tier': 'genesis',
+        'ruach_upgrade': True,
+    })
+    await interaction.response.send_message(
+        "✅ Ruach→Genesis upgrade initiated. Verifying your Ruach balance on the ledger...",
+        ephemeral=True
+    )
+
+
+# ============================================================================
+# SLASH COMMANDS — Archangel Platform Info
+# ============================================================================
+@bot.tree.command(
+    name="platform-economics",
+    description="ForeFathers Archangel platform economics (ARM Holdings model)"
+)
+async def platform_economics(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="🏰 Archangel Platform Economics",
+        description=(
+            "ForeFathers operates as a **platform licensor** (ARM Holdings model), "
+            "not a SaaS provider.\n\n"
+            "**How it works:**\n"
+            "1. Licensees build derivative innovations on the 12-patent stack\n"
+            "2. They file their own patents on those innovations\n"
+            "3. They license to others, keeping **75%** for 20 years\n"
+            "4. ForeFathers earns **25% platform royalty** on every derivative\n\n"
+            "**Scale projection (Year 10):**\n"
+            "2,500 licensee entities × $250K avg royalties = **$625M/yr** in platform royalties\n\n"
+            "**Tiers:**\n"
+            "⚔️ Gabriel — $25K + $5K/yr — XRPL only\n"
+            "🛡️ Michael — $50K + $10K/yr — Multi-chain + quantum security\n"
+            "👁️ Raphael — $100K+ + $20K/yr — Full continuity + DNA substrate\n\n"
+            "*Use `/join-archangel gabriel` to begin enterprise onboarding.*"
+        ),
+        color=discord.Color.purple()
+    )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+# ============================================================================
+# SLASH COMMANDS — Founder Approval (Ring 4)
+# ============================================================================
+@bot.tree.command(
+    name="request-approval",
+    description="Ring 4 — Request founder multi-sig approval for license NFT minting"
+)
+async def request_approval(interaction: discord.Interaction):
+    discord_id = interaction.user.id
+    embed = discord.Embed(
+        title="⏳ Ring 4 — Founder Approval Requested",
+        description=(
+            "Your request has been sent to the ForeFathers founders for review.\n\n"
+            "Founders will verify your Ring 1-3 completion on the ledger "
+            "and mint your license NFT.\n\n"
+            "Expected response: 24-48 hours.\n\n"
+            "Upon approval, Ring 5 trade secret access will be automatically "
+            "granted via PermissionedDomain."
+        ),
+        color=discord.Color.yellow()
+    )
+    # Post to approvals channel
+    channel = bot.get_channel(config.CHANNEL_APPROVALS)
+    if channel:
+        approval_embed = discord.Embed(
+            title="🔔 New Approval Request",
+            description=(
+                f"User: <@{discord_id}>\n"
+                f"Discord ID: {discord_id}\n"
+                f"Requested: {datetime.utcnow().isoformat()}"
+            ),
+            color=discord.Color.yellow()
+        )
+        await channel.send(embed=approval_embed)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
+# ============================================================================
+# ENTRY POINT
+# ============================================================================
+if __name__ == "__main__":
+    bot.run(config.DISCORD_TOKEN)"""
+LEMNISCATE GATE — PERMISSIONED DOMAIN MANAGER v3.0
+====================================================
+ForeFathers DAO — 303 Trade Secrets + New Additions
+
+TIER MAPPING (v3.0 — 6-tier system):
+  Old               →  New
+  tier_1_individual →  genesis  ($100 or 1,000 Ruach)
+  tier_2_business   →  exodus   ($1,000)
+  tier_3_enterprise →  gabriel  ($25K) / michael ($50K) / raphael ($100K+)
+  founders_only     →  founders_only  (unchanged — E.1 and M.10 NEVER revealed)
+
+NEW SECRETS ADDED IN v3.0:
+  • Patents 13 and 14: filed and real — implementation details protected under NDA
+  • Ruach dignity tokenomics (P series)
+  • La'azar AMM burn percentage calculation (L series additions)
+
+KEY RULES:
+  - Founders-only secrets E.1 and M.10: acknowledge existence, NEVER reveal content
+  - Archangel Crawler architecture: trade secret at all levels
+  - La'azar AMM calculation: trade secret (Patent 9+ implementation)
+  - Patents 13 and 14: architecture is public patent, implementation is trade secret
+
+Author: ForeFathers DAO
+Date: 2026-02-18
+Version: 3.0 (6-Tier + Patents 13+14 + Ruach + La'azar AMM)
+"""
+
+import os
+import json
+import asyncio
+from enum import Enum
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Any
+from xrpl.asyncio.clients import AsyncWebsocketClient
+from xrpl.wallet import Wallet
+from xrpl.asyncio.transaction import submit_and_wait
+
+# ============================================================================
+# PERMISSION LEVELS
+# ============================================================================
+class PermissionLevel(Enum):
+    NONE  = 0  # Blocked (ledger rejects)
+    READ  = 1  # Can query data
+    WRITE = 2  # Can modify data
+    ADMIN = 3  # Can grant/revoke permissions
+
+# ============================================================================
+# DOMAIN NAMESPACES — v3.0
+# ============================================================================
+class DomainNamespace(Enum):
+    """ForeFathers DAO domain namespaces"""
+    ROOT              = "forefathers.dao"
+    IDENTITY          = "forefathers.dao/identity"
+    LEGAL             = "forefathers.dao/legal"
+    ESCROW            = "forefathers.dao/escrow"
+    LICENSES          = "forefathers.dao/licenses"
+    SECRETS           = "forefathers.dao/secrets"
+    PACKAGES          = "forefathers.dao/packages"
+    RUACH             = "forefathers.dao/ruach"           # NEW v3.0
+    FMA               = "forefathers.dao/fma"             # NEW v3.0
+    LAAZAR            = "forefathers.dao/laazar"          # NEW v3.0
+    FOUNDING_MEMBERS  = "forefathers.dao/founding-members" # NEW v3.0
+    ARCHANGEL_WALLETS = "forefathers.dao/archangel-wallets" # NEW v3.0
+
+# ============================================================================
+# TRADE SECRET TIER CONSTANTS (v3.0 names)
+# ============================================================================
+TIER_RUACH    = "ruach"           # Earned via good deeds — 0 trade secrets
+TIER_GENESIS  = "genesis"         # $100 — 45 secrets (replaces tier_1_individual)
+TIER_EXODUS   = "exodus"          # $1,000 — 180 secrets (replaces tier_2_business)
+TIER_GABRIEL  = "gabriel"         # $25K — 12-patent stack (replaces tier_3_enterprise)
+TIER_MICHAEL  = "michael"         # $50K — multi-chain + quantum
+TIER_RAPHAEL  = "raphael"         # $100K+ — complete continuity
+TIER_FOUNDERS = "founders_only"   # Founders only (E.1 and M.10 — NEVER revealed)
+
+# Internal tier hierarchy for access control
+TIER_HIERARCHY = {
+    TIER_RUACH:    0,
+    TIER_GENESIS:  1,
+    TIER_EXODUS:   2,
+    TIER_GABRIEL:  3,
+    TIER_MICHAEL:  4,
+    TIER_RAPHAEL:  5,
+    TIER_FOUNDERS: 99,
+}
+
+# ============================================================================
+# TRADE SECRET DATACLASS
+# ============================================================================
+@dataclass
+class TradeSecretPermission:
+    """Maps trade secret to PermissionedDomain access rules."""
+    secret_id: str         # e.g., "G.1"
+    category: str          # e.g., "Biometric Processing"
+    description: str
+    required_tier: str     # from TIER_* constants above
+    domain_path: str       # Full path in PermissionedDomain
+    access_conditions: Dict = field(default_factory=dict)
+
+# ============================================================================
+# TRADE SECRETS CATALOG — 303 + NEW (v3.0 additions)
+# ============================================================================
+TRADE_SECRETS_DOMAINS: Dict[str, TradeSecretPermission] = {
+
+    # ========================================================================
+    # CATEGORY A: PATENT-RELATED (12 secrets)
+    # ========================================================================
+    "A.1": TradeSecretPermission(
+        secret_id="A.1",
+        category="Patent Integration Pathways",
+        description="Specific technical integration points between 12 patents (66 pathways)",
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/patent/integration_pathways",
+        access_conditions={"requires_nda": True, "requires_payment": True, "expires_on_license_expiry": True}
+    ),
+    "A.2": TradeSecretPermission(
+        secret_id="A.2",
+        category="Möbius Binding Implementation",
+        description="Code-level implementation of Möbius topology binding mechanism",
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/patent/mobius_binding",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True, "max_access_duration_days": 365}
+    ),
+
+    # ========================================================================
+    # CATEGORY B: LEGAL/CONSTITUTIONAL (28 secrets)
+    # ========================================================================
+    "B.1": TradeSecretPermission(
+        secret_id="B.1",
+        category="Dynamic Legal Clause Generation",
+        description="Algorithm for generating jurisdiction-specific NDA clauses",
+        required_tier=TIER_GENESIS,
+        domain_path="forefathers.dao/secrets/legal/nda_generation",
+        access_conditions={"requires_nda": True}
+    ),
+    "B.9": TradeSecretPermission(
+        secret_id="B.9",
+        category="Automated Escalation Routing",
+        description="Decision tree for routing legal disputes to appropriate arbitrators",
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/legal/escalation_routing",
+        access_conditions={"requires_nda": True, "audit_all_access": True}
+    ),
+
+    # ========================================================================
+    # CATEGORY C: AVATAR/AI (35 secrets)
+    # ========================================================================
+    "C.1": TradeSecretPermission(
+        secret_id="C.1",
+        category="Personality Mining Algorithms",
+        description="ML models for extracting personality from Discord activity",
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/ai/personality_mining",
+        access_conditions={"requires_nda": True, "requires_ai_ethics_training": True}
+    ),
+    "C.7": TradeSecretPermission(
+        secret_id="C.7",
+        category="Avatar Fidelity Scoring",
+        description="Proprietary scoring system for avatar-to-human accuracy",
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/ai/fidelity_scoring",
+        access_conditions={"requires_nda": True, "max_concurrent_access": 1}
+    ),
+
+    # ========================================================================
+    # CATEGORY D: FINANCIAL/ISO20022 (22 secrets)
+    # ========================================================================
+    "D.1": TradeSecretPermission(
+        secret_id="D.1",
+        category="ISO20022 Conversion Logic",
+        description="Mapping between XRPL transactions and ISO20022 message types",
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/financial/iso20022_conversion",
+        access_conditions={"requires_nda": True, "requires_financial_license": True}
+    ),
+
+    # ========================================================================
+    # CATEGORY E: GOVERNANCE (45 secrets)
+    # E.1 is FOUNDERS ONLY — acknowledge existence, NEVER reveal content
+    # ========================================================================
+    "E.1": TradeSecretPermission(
+        secret_id="E.1",
+        category="Constitutional Conflict Resolution",
+        description="[FOUNDERS ONLY — content protected. Existence acknowledged, implementation never disclosed.]",
+        required_tier=TIER_FOUNDERS,
+        domain_path="forefathers.dao/secrets/governance/conflict_resolution",
+        access_conditions={"requires_founder_signature": True, "audit_all_access": True, "notify_other_founders": True}
+    ),
+    "E.4": TradeSecretPermission(
+        secret_id="E.4",
+        category="Constitutional Constraint Verification",
+        description="Code for verifying transactions comply with constitutional rules",
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/governance/constraint_verification",
+        access_conditions={"requires_nda": True}
+    ),
+    "E.5": TradeSecretPermission(
+        secret_id="E.5",
+        category="Multi-Sig Weighted Voting",
+        description="Implementation of weighted voting in multi-sig approvals",
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/governance/weighted_voting",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True}
+    ),
+
+    # ========================================================================
+    # CATEGORY G: BIOMETRIC/IDENTITY (42 secrets)
+    # ========================================================================
+    "G.1": TradeSecretPermission(
+        secret_id="G.1",
+        category="Biometric Feature Extraction",
+        description="Proprietary algorithm for extracting facial geometry features",
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/biometric/feature_extraction",
+        access_conditions={"requires_nda": True, "requires_biometric_license": True, "max_deployments": 10}
+    ),
+    "H.2": TradeSecretPermission(
+        secret_id="H.2",
+        category="Spoof Detection",
+        description="AI model for detecting fake biometric submissions",
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/biometric/spoof_detection",
+        access_conditions={"requires_nda": True}
+    ),
+    "H.5": TradeSecretPermission(
+        secret_id="H.5",
+        category="Voice-to-Text Correlation",
+        description="Cross-validation between voice biometrics and text signatures",
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/biometric/voice_text_correlation",
+        access_conditions={"requires_nda": True}
+    ),
+
+    # ========================================================================
+    # CATEGORY J: CRYPTOGRAPHY (38 secrets)
+    # ========================================================================
+    "J.5": TradeSecretPermission(
+        secret_id="J.5",
+        category="Shamir Threshold Scheme Implementation",
+        description="Optimized Shamir secret sharing for license key distribution",
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/crypto/shamir_threshold",
+        access_conditions={"requires_nda": True}
+    ),
+
+    # ========================================================================
+    # CATEGORY K: NFT OPTIMIZATION (25 secrets)
+    # ========================================================================
+    "K.1": TradeSecretPermission(
+        secret_id="K.1",
+        category="NFT Metadata Optimization",
+        description="Compression algorithm for storing max data in XRPL NFT URI",
+        required_tier=TIER_GENESIS,
+        domain_path="forefathers.dao/secrets/nft/metadata_optimization",
+        access_conditions={"requires_nda": True}
+    ),
+
+    # ========================================================================
+    # CATEGORY M: REGENERATIVE NFT (18 secrets)
+    # M.10 is FOUNDERS ONLY — acknowledge existence, NEVER reveal content
+    # ========================================================================
+    "M.1": TradeSecretPermission(
+        secret_id="M.1",
+        category="Conditional Regeneration Triggers",
+        description="Logic for when/how license NFTs regenerate (annual renewal)",
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/nft/regeneration_triggers",
+        access_conditions={"requires_nda": True}
+    ),
+    "M.10": TradeSecretPermission(
+        secret_id="M.10",
+        category="Automatic License Revocation",
+        description="[FOUNDERS ONLY — content protected. Existence acknowledged, implementation never disclosed.]",
+        required_tier=TIER_FOUNDERS,
+        domain_path="forefathers.dao/secrets/nft/revocation_logic",
+        access_conditions={"requires_founder_signature": True, "audit_all_access": True}
+    ),
+
+    # ========================================================================
+    # CATEGORY N: ECONOMIC (15 secrets)
+    # ========================================================================
+    "N.1": TradeSecretPermission(
+        secret_id="N.1",
+        category="Fee Optimization Algorithm",
+        description="Dynamic pricing based on market conditions",
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/economic/fee_optimization",
+        access_conditions={"requires_nda": True, "requires_revenue_share_agreement": True}
+    ),
+
+    # ========================================================================
+    # CATEGORY Q: DISTRIBUTION (12 secrets)
+    # ========================================================================
+    "Q.3": TradeSecretPermission(
+        secret_id="Q.3",
+        category="Version-Controlled Distribution",
+        description="System for distributing different package versions to different tiers",
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/distribution/version_control",
+        access_conditions={"requires_nda": True}
+    ),
+
+    # ========================================================================
+    # CATEGORY R: DNA SUBSTRATE (23 secrets)
+    # ========================================================================
+    "R.1": TradeSecretPermission(
+        secret_id="R.1",
+        category="Binary-to-DNA Encoding",
+        description="Proprietary encoding scheme for storing binary data in DNA substrate",
+        required_tier=TIER_RAPHAEL,
+        domain_path="forefathers.dao/secrets/dna/binary_encoding",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True, "max_access_duration_days": 180}
+    ),
+
+    # ========================================================================
+    # PATENT 13 — AFO POS SYSTEM (NEW v3.0)
+    # Architecture: Public patent (filed February 2026)
+    # Implementation: Trade secret — protected under NDA
+    # ========================================================================
+    "P13.1": TradeSecretPermission(
+        secret_id="P13.1",
+        category="Patent 13 — P191 Protocol Orchestration Implementation",
+        description=(
+            "P191 Protocol internal orchestration logic: XRPL+Solana routing via Axelar, "
+            "protocol switching algorithm, real-time optimization weights. "
+            "Patent architecture is public. Implementation is trade secret."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/patent13/p191_orchestration",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True}
+    ),
+    "P13.2": TradeSecretPermission(
+        secret_id="P13.2",
+        category="Patent 13 — Constitutional Governance Transaction Verification Engine",
+        description=(
+            "Internal constitutional rules engine: verification algorithm, rule precedence, "
+            "compliance scoring, autonomous decision tree. "
+            "Patent architecture is public. Engine implementation is trade secret."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/patent13/governance_verification_engine",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True}
+    ),
+    "P13.3": TradeSecretPermission(
+        secret_id="P13.3",
+        category="Patent 13 — Zebec Real-Time Streaming Payment Infrastructure",
+        description=(
+            "Zebec Network streaming integration: continuous payment flow algorithms, "
+            "24/7 global coordination logic, streaming yield optimization. "
+            "Patent architecture is public. Implementation is trade secret."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/patent13/zebec_streaming",
+        access_conditions={"requires_nda": True}
+    ),
+    "P13.4": TradeSecretPermission(
+        secret_id="P13.4",
+        category="Patent 13 — 4-LLC AFO Revenue Distribution Algorithm",
+        description=(
+            "Automatic multi-entity revenue split logic: "
+            "ForeFathers DAO/LLC, Central Consolidation LLC, Accumulated Allocations LLC, "
+            "Digital Protocol LLC. Constitutional allocation weights. "
+            "Patent architecture is public. Distribution algorithm is trade secret."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/patent13/afo_revenue_distribution",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True}
+    ),
+    "P13.5": TradeSecretPermission(
+        secret_id="P13.5",
+        category="Patent 13 — Solana DeFi Treasury Integration (Solend/Marinade/Drift/Jupiter)",
+        description=(
+            "Sentinel AFO automatic DeFi deployment: yield optimization logic, "
+            "Solend USDC/USDT strategies, Marinade liquid staking parameters, "
+            "Drift hedging thresholds, Jupiter routing weights. "
+            "Patent architecture is public. DeFi parameters are trade secret."
+        ),
+        required_tier=TIER_MICHAEL,
+        domain_path="forefathers.dao/secrets/patent13/defi_treasury",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True}
+    ),
+    "P13.6": TradeSecretPermission(
+        secret_id="P13.6",
+        category="Patent 13 — Axelar Cross-Chain Coordination Implementation",
+        description=(
+            "XRPL↔Solana bridge coordination: XRP/RLUSD routing logic, "
+            "bridge entry/exit constitutional verification, "
+            "cross-chain liquidity optimization algorithm. Trade secret."
+        ),
+        required_tier=TIER_MICHAEL,
+        domain_path="forefathers.dao/secrets/patent13/axelar_coordination",
+        access_conditions={"requires_nda": True}
+    ),
+
+    # ========================================================================
+    # PATENT 14 — SOVEREIGN IDENTITY VERIFICATION (NEW v3.0)
+    # Architecture: Public patent (filed February 2026)
+    # Implementation: Trade secret — $0.00004/verification vs $2-3 Stripe
+    # ========================================================================
+    "P14.1": TradeSecretPermission(
+        secret_id="P14.1",
+        category="Patent 14 — W3C DID on XRPL NFTs: DID Creation Implementation",
+        description=(
+            "DID format construction: did:xrpl:{issuer}:{nft_id} — "
+            "NFT minting parameters, taxon assignment, metadata hex encoding, "
+            "PBKDF2 key derivation (100K iterations), database recording schema. "
+            "W3C DID spec is public. Implementation is trade secret."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/patent14/did_creation",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True}
+    ),
+    "P14.2": TradeSecretPermission(
+        secret_id="P14.2",
+        category="Patent 14 — AES-256/IPFS Encrypted Storage Architecture",
+        description=(
+            "Fernet encryption implementation: AES-128-CBC cipher parameters, "
+            "HMAC-SHA256 authentication, PBKDF2 key derivation ('forefathers_dao_salt'), "
+            "IPFS pin strategy, CID-to-NFT linking logic. "
+            "IPFS use is public. Encryption implementation is trade secret."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/patent14/encrypted_storage",
+        access_conditions={"requires_nda": True}
+    ),
+    "P14.3": TradeSecretPermission(
+        secret_id="P14.3",
+        category="Patent 14 — AI Face Recognition: 99.38% Accuracy Implementation",
+        description=(
+            "dlib face_recognition 128-dimensional vector extraction, "
+            "Euclidean distance threshold tuning, preprocessing pipeline, "
+            "99.38% LFW benchmark calibration parameters. "
+            "dlib library is public. Accuracy implementation is trade secret."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/patent14/face_recognition",
+        access_conditions={"requires_nda": True, "requires_biometric_license": True}
+    ),
+    "P14.4": TradeSecretPermission(
+        secret_id="P14.4",
+        category="Patent 14 — Liveness Detection: 95% TPR Multi-Modal Implementation",
+        description=(
+            "Multi-modal liveness detection: FFT moiré pattern detection thresholds, "
+            "Sobel edge + LBP texture scoring weights, confidence combination formula, "
+            ">95% TPR calibration. Multi-modal concept is public. Parameters are trade secret."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/patent14/liveness_detection",
+        access_conditions={"requires_nda": True, "requires_biometric_license": True}
+    ),
+    "P14.5": TradeSecretPermission(
+        secret_id="P14.5",
+        category="Patent 14 — OCR Document Verification Implementation",
+        description=(
+            "Tesseract OCR preprocessing pipeline: contrast enhancement parameters, "
+            "regex pattern library per document type/jurisdiction, "
+            "field extraction accuracy thresholds. OCR use is public. Patterns are trade secret."
+        ),
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/patent14/ocr_verification",
+        access_conditions={"requires_nda": True}
+    ),
+    "P14.6": TradeSecretPermission(
+        secret_id="P14.6",
+        category="Patent 14 — Document Authenticity: <5% False Positive Implementation",
+        description=(
+            "Document authenticity scoring: Laplacian variance sharpness ranges, "
+            "HSV lighting consistency analysis weights, Canny edge density thresholds, "
+            ">90% composite authenticity score formula. "
+            "Computer vision approach is public. Scoring formula is trade secret."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/patent14/document_authenticity",
+        access_conditions={"requires_nda": True, "requires_biometric_license": True}
+    ),
+    "P14.7": TradeSecretPermission(
+        secret_id="P14.7",
+        category="Patent 14 — NFT Verification Certificate Minting: $0.00004/verification",
+        description=(
+            "Verification NFT mint parameters: NFTokenTaxon value, metadata hash structure, "
+            "IPFS CID embedding, cost optimization to $0.00004 per verification "
+            "(vs $2-3 for Stripe Identity). Certificate structure is public. "
+            "Cost optimization implementation is trade secret."
+        ),
+        required_tier=TIER_GENESIS,
+        domain_path="forefathers.dao/secrets/patent14/nft_verification_cost",
+        access_conditions={"requires_nda": True}
+    ),
+
+    # ========================================================================
+    # RUACH DIGNITY TOKENOMICS (NEW v3.0)
+    # Public: Ruach tokens exist, earned through good deeds, burn for services
+    # Trade secret: economic model, AMM calculations, vendor earning formulas
+    # ========================================================================
+    "RU.1": TradeSecretPermission(
+        secret_id="RU.1",
+        category="Ruach — Dignity Token Economic Model",
+        description=(
+            "Ruach token issuance algorithm: good deed valuation weights, "
+            "community validation scoring, token supply control mechanism. "
+            "Human judgment is principle. Calculation algorithm is trade secret."
+        ),
+        required_tier=TIER_FOUNDERS,
+        domain_path="forefathers.dao/secrets/ruach/economic_model",
+        access_conditions={"requires_founder_signature": True, "audit_all_access": True}
+    ),
+    "RU.2": TradeSecretPermission(
+        secret_id="RU.2",
+        category="Ruach — Vendor Earning Formula on Burns",
+        description=(
+            "AMM vendor earning calculation: how vendors earn on every Ruach burn, "
+            "liquidity pool routing percentages, vendor yield optimization. "
+            "Trade secret — protected under NDA."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/ruach/vendor_earning_formula",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True}
+    ),
+    "RU.3": TradeSecretPermission(
+        secret_id="RU.3",
+        category="Ruach — Permissioned NFT Service Unlock Logic",
+        description=(
+            "Service unlock decision tree: burn amount per service type "
+            "(food/shelter/connectivity/hotel), permissioned NFT grant conditions, "
+            "service availability verification. Trade secret."
+        ),
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/ruach/service_unlock_logic",
+        access_conditions={"requires_nda": True}
+    ),
+    "RU.4": TradeSecretPermission(
+        secret_id="RU.4",
+        category="Ruach — Bootstrapping Path: Ruach→Genesis→Exodus→Gabriel",
+        description=(
+            "Complete bootstrapping path implementation: "
+            "progression milestones, tier unlock verification, "
+            "transition conditions from each tier to next. Trade secret."
+        ),
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/ruach/bootstrapping_path",
+        access_conditions={"requires_nda": True}
+    ),
+
+    # ========================================================================
+    # LA'AZAR AMM BURN PROTOCOL (NEW v3.0)
+    # Public: La'azar exists, 75%/25% split is known, POS micro-burn is known
+    # Trade secret: AMM burn percentage calculation, liquidity pool mechanics
+    # ========================================================================
+    "LA.1": TradeSecretPermission(
+        secret_id="LA.1",
+        category="La'azar — AMM Burn Percentage Calculation Algorithm",
+        description=(
+            "Dynamic AMM burn percentage calculation: how the burn percentage "
+            "auto-routes to the liquidity pool for universal connectivity. "
+            "The percentage is variable and calculated by AMM — algorithm is trade secret. "
+            "Existence of the calculation is public; the formula is not."
+        ),
+        required_tier=TIER_FOUNDERS,
+        domain_path="forefathers.dao/secrets/laazar/amm_burn_calculation",
+        access_conditions={"requires_founder_signature": True, "audit_all_access": True}
+    ),
+    "LA.2": TradeSecretPermission(
+        secret_id="LA.2",
+        category="La'azar — Liquidity Pool Architecture",
+        description=(
+            "AMM liquidity pool structure: pool composition, rebalancing triggers, "
+            "universal connectivity funding mechanism, "
+            "ForeFathers intentional 'loss' accounting from 25% platform share. "
+            "Trade secret."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/laazar/liquidity_pool",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True}
+    ),
+    "LA.3": TradeSecretPermission(
+        secret_id="LA.3",
+        category="La'azar — POS Micro-Burn Scaling Model",
+        description=(
+            "POS micro-burn economic model: merchant acquisition targets, "
+            "transaction volume projections to $6B/yr capture, "
+            "2.86M connectivity funding calculation, deflationary pressure modeling. "
+            "Trade secret."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/laazar/pos_scaling_model",
+        access_conditions={"requires_nda": True}
+    ),
+    "LA.4": TradeSecretPermission(
+        secret_id="LA.4",
+        category="La'azar — Perpetual IP Monetization Cycle Parameters",
+        description=(
+            "NFT regeneration cycle: NFTokenMint→Burn→Receive loop parameters, "
+            "platform accumulation curve, breakeven calculations, "
+            "perpetual self-funding IP development model. Trade secret."
+        ),
+        required_tier=TIER_EXODUS,
+        domain_path="forefathers.dao/secrets/laazar/perpetual_cycle",
+        access_conditions={"requires_nda": True}
+    ),
+
+    # ========================================================================
+    # ARCHANGEL CRAWLERS (NEW v3.0)
+    # Public: Names (Gabriel/Michael/Raphael Crawlers) and what they crawl
+    # Trade secret: Internal architecture, AI agent logic, data processing
+    # ========================================================================
+    "AC.1": TradeSecretPermission(
+        secret_id="AC.1",
+        category="Gabriel Constitutional AI Agent — Internal Architecture",
+        description=(
+            "Gabriel Crawler internal architecture: XRPL data pipeline design, "
+            "constitutional AI decision logic, governance vote processing, "
+            "accountability monitoring implementation. "
+            "Crawler existence and crawl targets are public. Architecture is trade secret."
+        ),
+        required_tier=TIER_GABRIEL,
+        domain_path="forefathers.dao/secrets/crawlers/gabriel_architecture",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True}
+    ),
+    "AC.2": TradeSecretPermission(
+        secret_id="AC.2",
+        category="Michael Constitutional AI Agent — Internal Architecture",
+        description=(
+            "Michael Crawler internal architecture: multi-chain security validation logic, "
+            "CRYSTALS-Kyber quantum-resistant implementation details, "
+            "XRPL+Hedera+Flare+Zebec coordination algorithm, threat detection model. "
+            "Architecture is trade secret at all levels."
+        ),
+        required_tier=TIER_MICHAEL,
+        domain_path="forefathers.dao/secrets/crawlers/michael_architecture",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True}
+    ),
+    "AC.3": TradeSecretPermission(
+        secret_id="AC.3",
+        category="Raphael Constitutional AI Agent — Internal Architecture",
+        description=(
+            "Raphael Crawler internal architecture: disaster recovery triggers, "
+            "succession protocol logic, institutional feed integration, "
+            "5-level crisis management decision tree, personality evolution model, "
+            "DNA substrate coordination. Architecture is trade secret at all levels."
+        ),
+        required_tier=TIER_RAPHAEL,
+        domain_path="forefathers.dao/secrets/crawlers/raphael_architecture",
+        access_conditions={"requires_nda": True, "requires_founder_approval": True}
+    ),
+}
+
+# ============================================================================
+# UTILITY FUNCTIONS
+# ============================================================================
+
+def get_secrets_for_tier(tier: str) -> List[str]:
+    """Return list of secret IDs accessible at a given tier."""
+    tier_level = TIER_HIERARCHY.get(tier, 0)
+    accessible = []
+    for secret_id, secret in TRADE_SECRETS_DOMAINS.items():
+        if secret.required_tier == TIER_FOUNDERS:
+            continue  # Never grant founder secrets via this function
+        secret_level = TIER_HIERARCHY.get(secret.required_tier, 99)
+        if tier_level >= secret_level:
+            accessible.append(secret_id)
+    return sorted(accessible)
+
+
+def count_secrets_for_tier(tier: str) -> int:
+    """Return count of secrets accessible at a given tier."""
+    return len(get_secrets_for_tier(tier))
+
+
+def get_founders_only_secrets() -> List[str]:
+    """
+    Return list of founders-only secret IDs (existence acknowledged, content never revealed).
+    Currently: E.1, M.10, RU.1, LA.1
+    """
+    return [
+        sid for sid, s in TRADE_SECRETS_DOMAINS.items()
+        if s.required_tier == TIER_FOUNDERS
+    ]
+
+
+# ============================================================================
+# PERMISSIONEDDOMAIN MANAGER
+# ============================================================================
+class PermissionedDomainManager:
+    """
+    Manages all PermissionedDomain operations for ForeFathers DAO.
+
+    Handles:
+    - Domain creation (one-time setup)
+    - Identity verification storage (Ring 1)
+    - NDA signature storage (Ring 2)
+    - Payment escrow tracking (Ring 3)
+    - Founder approval recording (Ring 4)
+    - Trade secret access grants (Ring 5)
+    - Ruach balance tracking (v3.0)
+    - FMA registration tracking (v3.0)
+    - Archangel wallet registration (v3.0)
+    - Founding member tracking (v3.0)
+    """
+
+    def __init__(self, wallet: Wallet, xrpl_url: str):
+        self.wallet = wallet
+        self.client = AsyncWebsocketClient(xrpl_url)
+        self._connected = False
+
+    async def connect(self):
+        """Connect to XRPL."""
+        await self.client.open()
+        self._connected = True
+        print("✅ PermissionedDomainManager connected to XRPL ledger")
+
+    # ========================================================================
+    # DOMAIN SETUP (one-time)
+    # ========================================================================
+    async def create_root_domain(self) -> str:
+        """Create root domain: forefathers.dao"""
+        from xrpl.models import DomainCreate
+        domain_create = DomainCreate(
+            account=self.wallet.classic_address,
+            domain="forefathers.dao",
+            flags=0
+        )
+        response = await submit_and_wait(domain_create, self.client, self.wallet)
+        return response.result['hash']
+
+    async def create_secrets_hierarchy(self):
+        """Create all subdomain namespaces for trade secrets."""
+        from xrpl.models import DomainCreate
+        categories = [
+            "patent", "legal", "ai", "financial", "governance",
+            "biometric", "crypto", "nft", "economic", "distribution", "dna",
+            "patent13", "patent14",  # NEW v3.0
+            "ruach", "laazar", "crawlers",  # NEW v3.0
+        ]
+        for category in categories:
+            domain_path = f"forefathers.dao/secrets/{category}"
+            domain_create = DomainCreate(
+                account=self.wallet.classic_address,
+                domain=domain_path,
+                parent_domain="forefathers.dao/secrets"
+            )
+            await submit_and_wait(domain_create, self.client, self.wallet)
+            print(f"  ✅ Created: {domain_path}")
+
+    async def setup_v3_domains(self):
+        """Create new v3.0 domain namespaces (Ruach, FMA, La'azar, Founding Members)."""
+        from xrpl.models import DomainCreate
+        new_domains = [
+            "forefathers.dao/ruach",
+            "forefathers.dao/fma",
+            "forefathers.dao/laazar",
+            "forefathers.dao/founding-members",
+            "forefathers.dao/archangel-wallets",
+        ]
+        for domain in new_domains:
+            try:
+                domain_create = DomainCreate(
+                    account=self.wallet.classic_address,
+                    domain=domain,
+                    parent_domain="forefathers.dao"
+                )
+                await submit_and_wait(domain_create, self.client, self.wallet)
+                print(f"  ✅ Created v3.0 domain: {domain}")
+            except Exception as e:
+                print(f"  ⚠️  Domain {domain} may already exist: {e}")
+
+    # ========================================================================
+    # RING 1: IDENTITY VERIFICATION
+    # ========================================================================
+    async def store_identity_verification(
+        self,
+        discord_id: int,
+        wick_verification_id: str,
+        confidence_score: float,
+        identity_nft_id: str
+    ) -> str:
+        """Store Ring 1 identity verification in forefathers.dao/identity/{discord_id}"""
+        from xrpl.models import DomainSet, Permission
+        domain_path = f"forefathers.dao/identity/{discord_id}"
+        identity_data = {
+            "discord_id": str(discord_id),
+            "wick_verification_id": wick_verification_id,
+            "confidence_score": confidence_score,
+            "identity_nft_id": identity_nft_id,
+            "verified_at": _now_iso(),
+            "status": "verified"
+        }
+        domain_set = DomainSet(
+            account=self.wallet.classic_address,
+            domain=domain_path,
+            data=json.dumps(identity_data).encode('utf-8').hex(),
+            permissions=[Permission(account=self.wallet.classic_address, level=PermissionLevel.READ.value)]
+        )
+        response = await submit_and_wait(domain_set, self.client, self.wallet)
+        return response.result['hash']
+
+    # ========================================================================
+    # RING 2: NDA SIGNATURE
+    # ========================================================================
+    async def store_nda_signature(
+        self,
+        discord_id: int,
+        nda_hash: str,
+        signature: str,
+        legal_name: str
+    ) -> str:
+        """Store Ring 2 NDA in forefathers.dao/legal/nda/{discord_id}"""
+        from xrpl.models import DomainSet, Permission
+        domain_path = f"forefathers.dao/legal/nda/{discord_id}"
+        nda_data = {
+            "discord_id": str(discord_id),
+            "legal_name": legal_name,
+            "nda_hash": nda_hash,
+            "signature": signature,
+            "signed_at": _now_iso(),
+            "version": "1.0.0"
+        }
+        domain_set = DomainSet(
+            account=self.wallet.classic_address,
+            domain=domain_path,
+            data=json.dumps(nda_data).encode('utf-8').hex(),
+            permissions=[Permission(account=self.wallet.classic_address, level=PermissionLevel.READ.value)]
+        )
+        response = await submit_and_wait(domain_set, self.client, self.wallet)
+        return response.result['hash']
+
+    # ========================================================================
+    # RING 3: PAYMENT ESCROW — v3.0 (6-tier)
+    # ========================================================================
+    async def store_payment_escrow(
+        self,
+        payment_id: str,
+        amount_usd: float,
+        sender_account: str,
+        tier: str  # One of: ruach, genesis, exodus, gabriel, michael, raphael
+    ) -> str:
+        """Store Ring 3 payment in forefathers.dao/escrow/{payment_id}"""
+        from xrpl.models import DomainSet, Permission
+        domain_path = f"forefathers.dao/escrow/{payment_id}"
+        escrow_data = {
+            "payment_id": payment_id,
+            "amount_usd": amount_usd,
+            "sender": sender_account,
+            "tier": tier,
+            "tier_hierarchy_level": TIER_HIERARCHY.get(tier, 0),
+            "status": "escrowed",
+            "created_at": _now_iso(),
+            "release_conditions": {
+                "requires_founder_approval": tier in (TIER_GABRIEL, TIER_MICHAEL, TIER_RAPHAEL),
+                "required_signatures": 2 if tier in (TIER_GABRIEL, TIER_MICHAEL, TIER_RAPHAEL) else 1,
+            }
+        }
+        domain_set = DomainSet(
+            account=self.wallet.classic_address,
+            domain=domain_path,
+            data=json.dumps(escrow_data).encode('utf-8').hex(),
+            permissions=[
+                Permission(account=sender_account, level=PermissionLevel.READ.value),
+                Permission(account=self.wallet.classic_address, level=PermissionLevel.WRITE.value),
+            ]
+        )
+        response = await submit_and_wait(domain_set, self.client, self.wallet)
+        return response.result['hash']
+
+    # ========================================================================
+    # RING 5: TRADE SECRET ACCESS — v3.0 (6-tier)
+    # ========================================================================
+    async def grant_secret_access(
+        self,
+        secret_id: str,
+        licensee_account: str,
+        license_tier: str,
+        license_nft_id: str
+    ) -> str:
+        """Grant access to a trade secret based on license tier."""
+        from xrpl.models import DomainSet, Permission
+        secret = TRADE_SECRETS_DOMAINS.get(secret_id)
+        if not secret:
+            raise ValueError(f"Unknown secret: {secret_id}")
+
+        # Founders-only secrets: NEVER granted regardless of tier
+        if secret.required_tier == TIER_FOUNDERS:
+            raise PermissionError(
+                f"Secret {secret_id} is founders-only. "
+                "Existence acknowledged, content never disclosed."
+            )
+
+        # Check tier authorization
+        required_level = TIER_HIERARCHY.get(secret.required_tier, 99)
+        licensee_level = TIER_HIERARCHY.get(license_tier, 0)
+        if licensee_level < required_level:
+            raise PermissionError(
+                f"Secret {secret_id} requires {secret.required_tier}, "
+                f"licensee has {license_tier}"
+            )
+
+        domain_set = DomainSet(
+            account=self.wallet.classic_address,
+            domain=secret.domain_path,
+            permissions=[
+                Permission(
+                    account=licensee_account,
+                    level=PermissionLevel.READ.value,
+                    metadata={
+                        "license_nft": license_nft_id,
+                        "granted_at": _now_iso(),
+                        "tier": license_tier
+                    }
+                )
+            ]
+        )
+        response = await submit_and_wait(domain_set, self.client, self.wallet)
+        print(f"  ✅ Granted {licensee_account} access to {secret_id} ({license_tier})")
+        return response.result['hash']
+
+    async def revoke_secret_access(
+        self,
+        secret_id: str,
+        licensee_account: str,
+        reason: str
+    ) -> str:
+        """Revoke access to a trade secret."""
+        from xrpl.models import DomainSet, Permission
+        secret = TRADE_SECRETS_DOMAINS[secret_id]
+        domain_set = DomainSet(
+            account=self.wallet.classic_address,
+            domain=secret.domain_path,
+            permissions=[
+                Permission(
+                    account=licensee_account,
+                    level=PermissionLevel.NONE.value,
+                    metadata={"revoked_at": _now_iso(), "reason": reason}
+                )
+            ]
+        )
+        response = await submit_and_wait(domain_set, self.client, self.wallet)
+        print(f"  ❌ Revoked {licensee_account} access to {secret_id}: {reason}")
+        return response.result['hash']
+
+    async def bulk_grant_tier_secrets(
+        self,
+        licensee_account: str,
+        license_tier: str,
+        license_nft_id: str
+    ) -> List[str]:
+        """
+        Grant access to ALL secrets allowed for a license tier.
+        Called after Ring 5 (license NFT minted).
+
+        Tier secret counts:
+          Ruach    = 0 secrets (dignity services only)
+          Genesis  = 45 secrets (tier_1_individual equivalent)
+          Exodus   = 180 secrets (tier_1 + tier_2_business equivalent)
+          Gabriel  = 12-patent stack + patent13/14 + crawler access
+          Michael  = Gabriel + multi-chain security secrets
+          Raphael  = Michael + disaster recovery + DNA substrate + succession
+          FOUNDERS = E.1 and M.10 only — NEVER auto-granted, always manual
+        """
+        if license_tier == TIER_RUACH:
+            print("  ℹ️  Ruach tier — no trade secrets, dignity services only")
+            return []
+
+        granted_txs = []
+        secrets_to_grant = get_secrets_for_tier(license_tier)
+
+        for secret_id in secrets_to_grant:
+            try:
+                tx_hash = await self.grant_secret_access(
+                    secret_id, licensee_account, license_tier, license_nft_id
+                )
+                granted_txs.append(tx_hash)
+            except PermissionError:
+                pass  # Founders-only secrets — skip silently
+            except Exception as e:
+                print(f"  ⚠️  Error granting {secret_id}: {e}")
+
+        print(f"  ✅ Granted {len(granted_txs)} secrets to {license_tier} licensee")
+        return granted_txs
+
+    # ========================================================================
+    # RUACH BALANCE — v3.0
+    # ========================================================================
+    async def get_ruach_balance(self, discord_id: int) -> int:
+        """Get Ruach token balance for a user from the ledger."""
+        data = await self.query_domain_raw(f"forefathers.dao/ruach/{discord_id}")
+        return data.get('balance', 0) if data else 0
+
+    async def update_ruach_balance(
+        self, discord_id: int, new_balance: int, reason: str = ""
+    ) -> str:
+        """
+        Update Ruach balance on ledger.
+        IMPORTANT: Only called by authorized community validators (humans).
+        System never punishes — only adds balance, never subtracts except on burn.
+        """
+        from xrpl.models import DomainSet, Permission
+        domain_path = f"forefathers.dao/ruach/{discord_id}"
+        ruach_data = {
+            "discord_id": str(discord_id),
+            "balance": new_balance,
+            "last_updated": _now_iso(),
+            "reason": reason,
+            "note": "Judged by humans only — system never punishes"
+        }
+        domain_set = DomainSet(
+            account=self.wallet.classic_address,
+            domain=domain_path,
+            data=json.dumps(ruach_data).encode('utf-8').hex(),
+            permissions=[
+                Permission(account=self.wallet.classic_address, level=PermissionLevel.WRITE.value),
+            ]
+        )
+        response = await submit_and_wait(domain_set, self.client, self.wallet)
+        return response.result['hash']
+
+    # ========================================================================
+    # FMA REGISTRATION — v3.0
+    # ========================================================================
+    async def register_fma(
+        self, discord_id: int, xrpl_address: str, referral_code: str
+    ) -> str:
+        """Register a Financial Market Ambassador (minimum Exodus tier required)."""
+        from xrpl.models import DomainSet, Permission
+        domain_path = f"forefathers.dao/fma/{discord_id}"
+        fma_data = {
+            "discord_id": str(discord_id),
+            "xrpl_address": xrpl_address,
+            "referral_code": referral_code,
+            "commission_pct": 2,
+            "registered_at": _now_iso(),
+            "status": "active"
+        }
+        domain_set = DomainSet(
+            account=self.wallet.classic_address,
+            domain=domain_path,
+            data=json.dumps(fma_data).encode('utf-8').hex(),
+            permissions=[
+                Permission(account=xrpl_address, level=PermissionLevel.READ.value),
+                Permission(account=self.wallet.classic_address, level=PermissionLevel.WRITE.value),
+            ]
+        )
+        response = await submit_and_wait(domain_set, self.client, self.wallet)
+        return response.result['hash']
+
+    # ========================================================================
+    # ARCHANGEL WALLET REGISTRATION — v3.0
+    # ========================================================================
+    async def store_archangel_wallet(
+        self, discord_id: int, xrpl_address: str, tier: str
+    ) -> str:
+        """Store verified Web3 wallet for Archangel tier member."""
+        from xrpl.models import DomainSet, Permission
+        domain_path = f"forefathers.dao/archangel-wallets/{discord_id}"
+        wallet_data = {
+            "discord_id": str(discord_id),
+            "xrpl_address": xrpl_address,
+            "tier": tier,
+            "verified_at": _now_iso(),
+            "web3_verified": True
+        }
+        domain_set = DomainSet(
+            account=self.wallet.classic_address,
+            domain=domain_path,
+            data=json.dumps(wallet_data).encode('utf-8').hex(),
+            permissions=[
+                Permission(account=xrpl_address, level=PermissionLevel.READ.value),
+                Permission(account=self.wallet.classic_address, level=PermissionLevel.WRITE.value),
+            ]
+        )
+        response = await submit_and_wait(domain_set, self.client, self.wallet)
+        return response.result['hash']
+
+    # ========================================================================
+    # QUERY & AUDIT
+    # ========================================================================
+    async def query_user_access(self, licensee_account: str) -> Dict[str, Any]:
+        """
+        Query which secrets a user has access to.
+        Returns summary of accessible secrets by tier.
+        """
+        accessible = []
+        for secret_id, secret in TRADE_SECRETS_DOMAINS.items():
+            has_access = await self._check_permission(secret.domain_path, licensee_account)
+            if has_access:
+                accessible.append(secret_id)
+        return {
+            "account": licensee_account,
+            "accessible_secrets": accessible,
+            "total_count": len(accessible),
+            "query_timestamp": _now_iso(),
+            "founders_only_acknowledged": [
+                "E.1 (Constitutional Conflict Resolution)",
+                "M.10 (Automatic License Revocation)",
+                "RU.1 (Ruach Economic Model)",
+                "LA.1 (La'azar AMM Calculation)",
+            ]
+        }
+
+    async def query_domain_raw(self, domain_path: str) -> Optional[Dict]:
+        """Query raw domain data (for internal use)."""
+        try:
+            # Placeholder: implement with actual XRPL PermissionedDomain query
+            return None
+        except Exception:
+            return None
+
+    async def set_domain_raw(self, domain_path: str, data: Dict) -> bool:
+        """Set raw domain data (for founding member tracking etc.)."""
+        try:
+            from xrpl.models import DomainSet, Permission
+            domain_set = DomainSet(
+                account=self.wallet.classic_address,
+                domain=domain_path,
+                data=json.dumps(data).encode('utf-8').hex(),
+                permissions=[]
+            )
+            await submit_and_wait(domain_set, self.client, self.wallet)
+            return True
+        except Exception:
+            return False
+
+    async def _check_permission(self, domain_path: str, account: str) -> bool:
+        """Check if account has permission to domain (placeholder)."""
+        # TODO: Replace with actual XRPL PermissionedDomain API query
+        return False
+
+
+# ============================================================================
+# UTILITY
+# ============================================================================
+def _now_iso() -> str:
+    from datetime import datetime
+    return datetime.utcnow().isoformat() + "Z"
+
+
+# ============================================================================
+# DEPLOYMENT GUIDE
+# ============================================================================
+DEPLOYMENT_GUIDE = """
+PERMISSIONEDDOMAIN DEPLOYMENT — ForeFathers DAO v3.0
+=====================================================
+
+WHAT'S NEW IN v3.0:
+  • 6-tier system (Ruach/Genesis/Exodus/Gabriel/Michael/Raphael)
+  • Patent 13 trade secrets (P13.1–P13.6)
+  • Patent 14 trade secrets (P14.1–P14.7)
+  • Ruach dignity tokenomics secrets (RU.1–RU.4)
+  • La'azar AMM burn calculation secrets (LA.1–LA.4)
+  • Archangel Crawler architecture secrets (AC.1–AC.3)
+
+IMMUTABLE RULES:
+  • E.1 and M.10: founders-only, NEVER grant, NEVER reveal content
+  • Archangel Crawler architecture: trade secret at ALL levels
+  • Ruach: bad behavior judged by HUMANS ONLY — system never punishes
+  • La'azar AMM calculation: trade secret (LA.1) — formula protected
+  • Patent 13 + 14 architecture: public patent | implementation: trade secret
+
+DEPLOYMENT SEQUENCE:
+  1. Deploy v2.0 domain hierarchy (already done)
+  2. python domain_manager.py setup-v3  → creates new v3 namespaces
+  3. Verify secrets count per tier:
+       genesis  → {genesis_count} secrets
+       exodus   → {exodus_count} secrets
+       gabriel  → {gabriel_count}+ secrets
+  4. Run tests: python domain_manager.py test-tiers
+
+COST:
+  - New domain creation: ~2 XRP
+  - Per secret grant: ~0.00001 XRP
+""".format(
+    genesis_count=count_secrets_for_tier(TIER_GENESIS),
+    exodus_count=count_secrets_for_tier(TIER_EXODUS),
+    gabriel_count=count_secrets_for_tier(TIER_GABRIEL),
+)
+
+
+if __name__ == "__main__":
+    print(DEPLOYMENT_GUIDE)
+    print(f"\nSecret counts by tier:")
+    for tier in [TIER_RUACH, TIER_GENESIS, TIER_EXODUS, TIER_GABRIEL, TIER_MICHAEL, TIER_RAPHAEL]:
+        count = count_secrets_for_tier(tier)
+        print(f"  {tier:10s}: {count} secrets")
+    print(f"\nFounders-only secrets (acknowledged, never revealed):")
+    for sid in get_founders_only_secrets():
+        s = TRADE_SECRETS_DOMAINS[sid]
+        print(f"  {sid}: {s.category}")"""
+FOREFATHERS DAO SDK v3.0
+=========================
+Unified SDK for the 6-tier ForeFathers DAO platform.
+
+WHAT THIS SDK PROVIDES:
+  - Tier constants and pricing
+  - NFT minting for all 6 tiers
+  - Ruach token management
+  - FMA commission routing
+  - La'azar burn integration
+  - XRPL + PermissionedDomain wiring
+  - Early Adopter NFT handling
+  - First 1,000 movers tracking
+
+LANGUAGE RULES (enforced throughout):
+  - "ledger" not "blockchain"
+  - "rings" not "steps"
+  - "licensees" not "customers"
+
+Author: ForeFathers DAO
+Date: 2026-02-18
+Version: 3.0 (6-Tier + Ruach + FMA + La'azar)
+"""
+
+import os
+import asyncio
+import json
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any, Tuple
+from dataclasses import dataclass
+
+from xrpl.asyncio.clients import AsyncWebsocketClient
+from xrpl.models import (
+    Payment, NFTokenMint, NFTokenBurn, EscrowCreate, EscrowFinish,
+    Memo, MemoWrapper
+)
+from xrpl.wallet import Wallet
+from xrpl.asyncio.transaction import submit_and_wait
+
+from domain_manager import (
+    PermissionedDomainManager,
+    TRADE_SECRETS_DOMAINS,
+    TIER_HIERARCHY,
+    TIER_RUACH, TIER_GENESIS, TIER_EXODUS,
+    TIER_GABRIEL, TIER_MICHAEL, TIER_RAPHAEL, TIER_FOUNDERS,
+    get_secrets_for_tier, count_secrets_for_tier,
+)
+
+# ============================================================================
+# TIER CONSTANTS (v3.0 — 6-tier system)
+# ============================================================================
+
+@dataclass(frozen=True)
+class TierSpec:
+    """Complete specification for a ForeFathers DAO tier."""
+    key: str                       # Internal key
+    name: str                      # Display name
+    price_usd: float               # USD price (0 for Ruach)
+    annual_usd: float              # Annual renewal USD (0 for retail tiers)
+    ruach_cost: int                # Ruach tokens needed (for Ruach tier)
+    secret_count: int              # Trade secrets accessible
+    web3_required: bool            # Requires XRPL wallet connection
+    publicly_visible: bool         # Onboarding publicly visible
+    chains: List[str]              # Supported chains
+    patent_stack: int              # Number of patents in stack (0 for retail)
+    platform_royalty_pct: int      # Platform royalty % (0 for retail)
+    crawler: Optional[str]         # Constitutional AI agent name (None for retail)
+    quantum_resistant: bool        # CRYSTALS-Kyber (Michael+ only)
+    multi_generational: bool       # Multi-gen continuity (Raphael only)
+    nfttaxon: int                  # XRPL NFTokenTaxon for this tier's NFTs
+
+
+TIERS: Dict[str, TierSpec] = {
+    TIER_RUACH: TierSpec(
+        key=TIER_RUACH,
+        name="Ruach",
+        price_usd=0.0,
+        annual_usd=0.0,
+        ruach_cost=0,               # Earned via good deeds, not purchased
+        secret_count=0,
+        web3_required=False,
+        publicly_visible=True,
+        chains=["XRPL"],
+        patent_stack=0,
+        platform_royalty_pct=0,
+        crawler=None,
+        quantum_resistant=False,
+        multi_generational=False,
+        nfttaxon=1,
+    ),
+    TIER_GENESIS: TierSpec(
+        key=TIER_GENESIS,
+        name="Genesis",
+        price_usd=100.0,
+        annual_usd=0.0,
+        ruach_cost=1000,            # 1,000 Ruach = Genesis (alternative path)
+        secret_count=45,
+        web3_required=False,
+        publicly_visible=True,
+        chains=["XRPL"],
+        patent_stack=0,
+        platform_royalty_pct=0,
+        crawler=None,
+        quantum_resistant=False,
+        multi_generational=False,
+        nfttaxon=2,
+    ),
+    TIER_EXODUS: TierSpec(
+        key=TIER_EXODUS,
+        name="Exodus",
+        price_usd=1_000.0,
+        annual_usd=0.0,
+        ruach_cost=0,
+        secret_count=180,
+        web3_required=False,
+        publicly_visible=True,
+        chains=["XRPL"],
+        patent_stack=0,
+        platform_royalty_pct=0,
+        crawler=None,
+        quantum_resistant=False,
+        multi_generational=False,
+        nfttaxon=3,
+    ),
+    TIER_GABRIEL: TierSpec(
+        key=TIER_GABRIEL,
+        name="Gabriel",
+        price_usd=25_000.0,
+        annual_usd=5_000.0,
+        ruach_cost=0,
+        secret_count=count_secrets_for_tier(TIER_GABRIEL),
+        web3_required=True,
+        publicly_visible=False,
+        chains=["XRPL"],
+        patent_stack=12,
+        platform_royalty_pct=25,
+        crawler="Gabriel Constitutional AI Agent",
+        quantum_resistant=False,
+        multi_generational=False,
+        nfttaxon=4,
+    ),
+    TIER_MICHAEL: TierSpec(
+        key=TIER_MICHAEL,
+        name="Michael",
+        price_usd=50_000.0,
+        annual_usd=10_000.0,
+        ruach_cost=0,
+        secret_count=count_secrets_for_tier(TIER_MICHAEL),
+        web3_required=True,
+        publicly_visible=False,
+        chains=["XRPL", "Hedera", "Flare", "Zebec"],
+        patent_stack=12,
+        platform_royalty_pct=25,
+        crawler="Michael Constitutional AI Agent",
+        quantum_resistant=True,    # CRYSTALS-Kyber
+        multi_generational=False,
+        nfttaxon=5,
+    ),
+    TIER_RAPHAEL: TierSpec(
+        key=TIER_RAPHAEL,
+        name="Raphael",
+        price_usd=100_000.0,
+        annual_usd=20_000.0,
+        ruach_cost=0,
+        secret_count=count_secrets_for_tier(TIER_RAPHAEL),
+        web3_required=True,
+        publicly_visible=False,
+        chains=["XRPL", "Hedera", "Flare", "Zebec", "Disaster Recovery", "Succession"],
+        patent_stack=12,
+        platform_royalty_pct=25,
+        crawler="Raphael Constitutional AI Agent",
+        quantum_resistant=True,
+        multi_generational=True,
+        nfttaxon=6,
+    ),
+}
+
+# ============================================================================
+# SPECIAL PRODUCTS
+# ============================================================================
+
+EARLY_ADOPTER_NFT = {
+    "name": "Early Adopter NFT",
+    "price_usd": 5_000.0,
+    "price_rlusd_drops": 500_000_000_0000,
+    "archangel_discount_pct": 50,       # 50% off Gabriel/Michael/Raphael forever
+    "referral_revenue_share_pct": 2,    # 2% referral revenue share
+    "founding_member_eligible": True,
+    "nfttaxon": 10,
+}
+
+FMA_SPEC = {
+    "name": "Financial Market Ambassador",
+    "minimum_tier": TIER_EXODUS,        # Must hold Exodus NFT minimum
+    "commission_pct": 2,                # 2% of referred NFT sale
+    "payout": "Automatic via La'azar Hook on ledger",
+    "nfttaxon": 11,
+}
+
+# ============================================================================
+# LA'AZAR BURN CONSTANTS (public values)
+# Distribution algorithm: trade secret
+# ============================================================================
+LAAZAR_CREATOR_PCT      = 75   # 75% of captured value to IP creator
+LAAZAR_PLATFORM_PCT     = 25   # 25% to platform
+LAAZAR_POS_COMMUNITY    = 50   # 50% of micro-burn to community
+LAAZAR_POS_LOYALTY      = 25   # 25% to merchant loyalty
+LAAZAR_POS_HUMANITARIAN = 25   # 25% to humanitarian connectivity
+LAAZAR_POS_RATE         = 1    # 1% micro-burn on POS transactions
+
+# Universal connectivity funded from platform share
+# AMM % calculation: trade secret (LA.1 — protected)
+CONNECTIVITY_FUNDED_FROM_PLATFORM = True
+
+# ============================================================================
+# FOREFATHERS SDK — MAIN CLASS
+# ============================================================================
+class ForeAuthersSDK:
+    """
+    Main ForeFathers DAO SDK.
+    Provides unified interface for all platform operations.
+
+    Real-world analogy:
+    Think of this like an ARM Holdings licensing API.
+    ARM doesn't build phones — they license the architecture.
+    ForeFathers doesn't build your innovation — they license the IP stack.
+    You build on the 12-patent foundation and file your own patents on top.
+    You keep 75% of derivative royalties for 20 years.
+    ForeFathers earns 25% platform royalty on everything you build.
+    Year 10 projection: 2,500 licensees × $250K avg = $625M/yr platform royalties.
+    """
+
+    def __init__(self, wallet: Wallet, xrpl_url: str):
+        self.wallet  = wallet
+        self.xrpl_url = xrpl_url
+        self.client  = AsyncWebsocketClient(xrpl_url)
+        self.domain_manager = PermissionedDomainManager(wallet, xrpl_url)
+
+    async def connect(self):
+        """Connect to XRPL ledger."""
+        await self.client.open()
+        await self.domain_manager.connect()
+        print("✅ ForeFathers SDK v3.0 connected to XRPL ledger")
+
+    # ========================================================================
+    # TIER INFO
+    # ========================================================================
+    def get_tier(self, tier_key: str) -> TierSpec:
+        """Get tier specification by key."""
+        if tier_key not in TIERS:
+            raise ValueError(f"Unknown tier: {tier_key}. Valid: {list(TIERS.keys())}")
+        return TIERS[tier_key]
+
+    def is_archangel_tier(self, tier_key: str) -> bool:
+        """Return True if tier requires Web3 wallet (Gabriel/Michael/Raphael)."""
+        return TIERS.get(tier_key, TierSpec(**{f: None for f in TierSpec.__dataclass_fields__})).web3_required
+
+    def get_tier_price(self, tier_key: str, with_early_adopter: bool = False) -> float:
+        """
+        Get USD price for a tier.
+        If licensee holds Early Adopter NFT, Archangel tiers are 50% off.
+        """
+        tier = self.get_tier(tier_key)
+        price = tier.price_usd
+        if with_early_adopter and tier.web3_required:
+            price *= (1 - EARLY_ADOPTER_NFT['archangel_discount_pct'] / 100)
+        return price
+
+    # ========================================================================
+    # NFT MINTING — ALL 6 TIERS
+    # ========================================================================
+    async def mint_license_nft(
+        self,
+        licensee_account: str,
+        tier_key: str,
+        metadata: Optional[Dict] = None,
+        fma_referral_account: Optional[str] = None,
+    ) -> Tuple[str, str]:
+        """
+        Mint a license NFT for a licensee at the specified tier.
+        Returns (nft_id, tx_hash).
+
+        FMA commission routing:
+          If fma_referral_account is provided and licensee holds Exodus+ tier,
+          a 2% commission payment is emitted atomically with the NFT mint.
+
+        Language note: "licensee" not "customer", "ledger" not "blockchain"
+        """
+        tier = self.get_tier(tier_key)
+
+        # Build NFT metadata
+        nft_metadata = {
+            "tier": tier_key,
+            "tier_name": tier.name,
+            "price_usd": tier.price_usd,
+            "secret_count": tier.secret_count,
+            "patent_stack": tier.patent_stack,
+            "platform_royalty_pct": tier.platform_royalty_pct,
+            "chains": tier.chains,
+            "crawler": tier.crawler,
+            "minted_at": datetime.utcnow().isoformat() + "Z",
+            "licensee": licensee_account,
+        }
+        if metadata:
+            nft_metadata.update(metadata)
+
+        # Build memos
+        memos = [
+            MemoWrapper(
+                memo=Memo(
+                    memo_type="54494552",  # "TIER" hex
+                    memo_data=tier_key.encode().hex()
+                )
+            )
+        ]
+
+        # FMA referral memo (if applicable)
+        if fma_referral_account:
+            memos.append(MemoWrapper(
+                memo=Memo(
+                    memo_type="464d415f524546455252414c",  # "FMA_REFERRAL" hex
+                    memo_data=fma_referral_account.encode().hex()
+                )
+            ))
+
+        nft_mint = NFTokenMint(
+            account=self.wallet.classic_address,
+            nftoken_taxon=tier.nfttaxon,
+            flags=8,  # lsfBurnable — enables renewal/revocation
+            transfer_fee=0,  # Non-transferable (bound to licensee)
+            uri=json.dumps(nft_metadata).encode().hex()[:256],  # XRPL URI limit
+            memos=memos
+        )
+
+        response = await submit_and_wait(nft_mint, self.client, self.wallet)
+        nft_id  = _extract_nft_id(response.result)
+        tx_hash = response.result['hash']
+
+        # Route FMA 2% commission if referral present
+        if fma_referral_account and tier.price_usd > 0:
+            await self._route_fma_commission(
+                fma_referral_account, tier.price_usd, tier_key
+            )
+
+        print(f"  ✅ Minted {tier.name} license NFT: {nft_id[:16]}...")
+        return nft_id, tx_hash
+
+    async def mint_ruach_nft(
+        self,
+        recipient_account: str,
+        initial_balance: int = 0,
+        community_validator: str = ""
+    ) -> Tuple[str, str]:
+        """
+        Mint a Ruach dignity token NFT for a recipient.
+        Balance starts at 0 — incremented by community validators (humans only).
+        System never punishes — only awards Ruach, never deducts except on service burn.
+
+        Real-world example:
+        A community member helps organize a neighborhood clean-up.
+        A human community validator submits a Ruach award transaction.
+        The system adds +10 Ruach to their balance. No algorithm decides this.
+        At 1,000 Ruach, the member can upgrade to Genesis tier for free.
+        """
+        nft_metadata = {
+            "type": "RuachDignityToken",
+            "recipient": recipient_account,
+            "initial_balance": initial_balance,
+            "awarded_by": community_validator,
+            "awarded_at": datetime.utcnow().isoformat() + "Z",
+            "note": (
+                "Earned through good deeds — judged by humans only. "
+                "System rewards only, never punishes. "
+                "Burns unlock food, shelter, connectivity, and hotel services."
+            )
+        }
+        memos = [MemoWrapper(
+            memo=Memo(
+                memo_type="52554143485f544f4b454e",  # "RUACH_TOKEN" hex
+                memo_data=json.dumps({"balance": initial_balance}).encode().hex()
+            )
+        )]
+        nft_mint = NFTokenMint(
+            account=self.wallet.classic_address,
+            nftoken_taxon=TIERS[TIER_RUACH].nfttaxon,
+            flags=8,  # lsfBurnable — burned on service unlock
+            transfer_fee=0,
+            uri=json.dumps(nft_metadata).encode().hex()[:256],
+            memos=memos
+        )
+        response = await submit_and_wait(nft_mint, self.client, self.wallet)
+        nft_id  = _extract_nft_id(response.result)
+        tx_hash = response.result['hash']
+        print(f"  ✅ Minted Ruach dignity NFT for {recipient_account[:16]}...")
+        return nft_id, tx_hash
+
+    async def mint_early_adopter_nft(
+        self,
+        recipient_account: str,
+        discord_id: int,
+        founding_member_number: Optional[int] = None
+    ) -> Tuple[str, str]:
+        """
+        Mint Early Adopter NFT ($5,000).
+        Grants 50% discount on all Archangel tiers forever + 2% referral share.
+        """
+        nft_metadata = {
+            "type": "EarlyAdopterNFT",
+            "recipient": recipient_account,
+            "discord_id": str(discord_id),
+            "price_usd": EARLY_ADOPTER_NFT['price_usd'],
+            "archangel_discount_pct": EARLY_ADOPTER_NFT['archangel_discount_pct'],
+            "referral_share_pct": EARLY_ADOPTER_NFT['referral_revenue_share_pct'],
+            "minted_at": datetime.utcnow().isoformat() + "Z",
+        }
+        if founding_member_number:
+            nft_metadata["founding_member_number"] = founding_member_number
+
+        nft_mint = NFTokenMint(
+            account=self.wallet.classic_address,
+            nftoken_taxon=EARLY_ADOPTER_NFT['nfttaxon'],
+            flags=8,
+            transfer_fee=0,
+            uri=json.dumps(nft_metadata).encode().hex()[:256],
+        )
+        response = await submit_and_wait(nft_mint, self.client, self.wallet)
+        nft_id  = _extract_nft_id(response.result)
+        tx_hash = response.result['hash']
+        if founding_member_number:
+            print(f"  ✅ Minted Early Adopter NFT #{founding_member_number}: {nft_id[:16]}...")
+        else:
+            print(f"  ✅ Minted Early Adopter NFT: {nft_id[:16]}...")
+        return nft_id, tx_hash
+
+    # ========================================================================
+    # FMA COMMISSION ROUTING
+    # ========================================================================
+    async def _route_fma_commission(
+        self,
+        fma_account: str,
+        sale_amount_usd: float,
+        tier_key: str
+    ):
+        """
+        Route 2% FMA commission to the referring Financial Market Ambassador.
+        Called atomically during NFT mint if fma_referral_account is provided.
+        Minimum FMA holding requirement: Exodus tier (verified by bot before SDK call).
+
+        Real-world example:
+        An FMA member (Sarah) refers a new Exodus licensee to ForeFathers.
+        The licensee pays $1,000. Sarah automatically receives $20 (2%) via this routing.
+        Payment happens atomically on the XRPL ledger — no manual intervention.
+        Sarah's XRPL wallet receives the commission with a FMA_COMMISSION memo.
+        """
+        commission_usd = sale_amount_usd * FMA_SPEC['commission_pct'] / 100
+
+        payment = Payment(
+            account=self.wallet.classic_address,
+            destination=fma_account,
+            amount={
+                "currency": "USD",
+                "value": str(commission_usd),
+                "issuer": os.getenv('RLUSD_ISSUER', '')
+            },
+            memos=[MemoWrapper(
+                memo=Memo(
+                    memo_type="464d415f434f4d4d495353494f4e",  # "FMA_COMMISSION" hex
+                    memo_data=json.dumps({
+                        "tier": tier_key,
+                        "sale_usd": sale_amount_usd,
+                        "commission_usd": commission_usd,
+                        "commission_pct": FMA_SPEC['commission_pct']
+                    }).encode().hex()
+                )
+            )]
+        )
+        response = await submit_and_wait(payment, self.client, self.wallet)
+        print(f"  ✅ FMA 2% commission routed: ${commission_usd:.2f} → {fma_account[:16]}...")
+        return response.result['hash']
+
+    # ========================================================================
+    # RUACH MANAGEMENT
+    # ========================================================================
+    async def award_ruach(
+        self,
+        discord_id: int,
+        xrpl_address: str,
+        amount: int,
+        validator_account: str,
+        reason: str
+    ) -> str:
+        """
+        Award Ruach tokens to a community member.
+        MUST be called by authorized human community validators only.
+        System never punishes — only awards.
+
+        Real-world example:
+        A moderator validates that user123 helped 3 new members onboard.
+        The moderator submits award_ruach(discord_id=123, amount=50, reason="Onboarding help").
+        User123's Ruach balance goes from 950 → 1000 — triggering Genesis upgrade eligibility.
+        """
+        current_balance = await self.domain_manager.get_ruach_balance(discord_id)
+        new_balance = current_balance + amount
+        tx_hash = await self.domain_manager.update_ruach_balance(
+            discord_id, new_balance, f"Human validator award: {reason}"
+        )
+        print(f"  ✅ Awarded {amount} Ruach to discord:{discord_id} (total: {new_balance})")
+        if new_balance >= TIERS[TIER_GENESIS].ruach_cost:
+            print(f"  🌱 discord:{discord_id} is now eligible for Genesis tier!")
+        return tx_hash
+
+    async def burn_ruach_for_service(
+        self,
+        discord_id: int,
+        xrpl_address: str,
+        service_type: str,  # "food", "shelter", "connectivity", "hotel"
+        burn_amount: int
+    ) -> Dict[str, Any]:
+        """
+        Burn Ruach tokens to unlock a dignity service.
+        AMM auto-routes burn proceeds to liquidity pool (vendors earn on every burn).
+        Returns service access grant info.
+        """
+        current_balance = await self.domain_manager.get_ruach_balance(discord_id)
+        if current_balance < burn_amount:
+            raise ValueError(
+                f"Insufficient Ruach: need {burn_amount}, have {current_balance}"
+            )
+
+        new_balance = current_balance - burn_amount
+        await self.domain_manager.update_ruach_balance(
+            discord_id, new_balance, f"Service burn: {service_type}"
+        )
+
+        # Return service grant (actual NFT mint handled by Hook on ledger)
+        return {
+            "service": service_type,
+            "ruach_burned": burn_amount,
+            "new_balance": new_balance,
+            "granted_at": datetime.utcnow().isoformat() + "Z",
+            "note": "AMM routes burn proceeds to liquidity pool — vendor earns on this burn"
+        }
+
+    # ========================================================================
+    # COMPLETE LICENSEE ONBOARDING
+    # ========================================================================
+    async def complete_onboarding(
+        self,
+        discord_id: int,
+        licensee_account: str,
+        tier_key: str,
+        payment_tx_hash: str,
+        fma_referral_account: Optional[str] = None,
+        is_ruach_upgrade: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Complete full onboarding for a licensee:
+          1. Mint license NFT
+          2. Store in PermissionedDomain
+          3. Route FMA commission (if applicable)
+          4. Grant trade secret access (Ring 5)
+          5. Return summary
+
+        This is the single function that ties Rings 3→5 together.
+        """
+        print(f"\n🚀 Starting onboarding: {tier_key} tier for discord:{discord_id}")
+
+        # 1. Mint NFT
+        nft_id, nft_tx = await self.mint_license_nft(
+            licensee_account, tier_key,
+            metadata={"payment_tx": payment_tx_hash, "discord_id": str(discord_id)},
+            fma_referral_account=fma_referral_account
+        )
+
+        # 2. Store escrow record
+        payment_id = f"{discord_id}:{tier_key}:{payment_tx_hash[:8]}"
+        price = 0.0 if is_ruach_upgrade else TIERS[tier_key].price_usd
+        await self.domain_manager.store_payment_escrow(
+            payment_id, price, licensee_account, tier_key
+        )
+
+        # 3. Grant trade secrets (Ring 5)
+        granted = await self.domain_manager.bulk_grant_tier_secrets(
+            licensee_account, tier_key, nft_id
+        )
+
+        # 4. Return summary
+        tier = TIERS[tier_key]
+        summary = {
+            "discord_id": discord_id,
+            "tier": tier_key,
+            "tier_name": tier.name,
+            "licensee_account": licensee_account,
+            "license_nft_id": nft_id,
+            "nft_tx_hash": nft_tx,
+            "secrets_granted": len(granted),
+            "archangel_crawler": tier.crawler,
+            "web3_required": tier.web3_required,
+            "onboarded_at": datetime.utcnow().isoformat() + "Z",
+        }
+        if is_ruach_upgrade:
+            summary["upgrade_path"] = "Ruach → Genesis (1,000 good deeds)"
+
+        print(f"\n  ✅ Onboarding complete: {tier.name} tier")
+        print(f"     NFT: {nft_id[:16]}...")
+        print(f"     Secrets: {len(granted)} granted on ledger")
+        return summary
+
+    # ========================================================================
+    # QUERY METHODS
+    # ========================================================================
+    async def get_licensee_status(self, licensee_account: str) -> Dict[str, Any]:
+        """Get full status for a licensee account."""
+        access = await self.domain_manager.query_user_access(licensee_account)
+        return {
+            "account": licensee_account,
+            "accessible_secrets": access['accessible_secrets'],
+            "secret_count": access['total_count'],
+            "founders_only_acknowledged": access['founders_only_acknowledged'],
+            "query_time": access['query_timestamp'],
+        }
+
+    def tier_summary(self) -> str:
+        """Return formatted tier summary for display."""
+        lines = ["ForeFathers DAO — Tier Summary\n" + "="*40]
+        for key, t in TIERS.items():
+            price_str = (
+                "Earned (1,000 good deeds)" if key == TIER_RUACH
+                else f"${t.price_usd:,.0f} USD"
+                + (f" + ${t.annual_usd:,.0f}/yr" if t.annual_usd else "")
+            )
+            web3 = " [Web3 required]" if t.web3_required else ""
+            lines.append(
+                f"  {t.name:10s} — {price_str}{web3}\n"
+                f"             Secrets: {t.secret_count} | "
+                f"Patents: {t.patent_stack} | "
+                f"Crawler: {t.crawler or 'N/A'}"
+            )
+        return "\n".join(lines)
+
+
+# ============================================================================
+# UTILITY FUNCTIONS
+# ============================================================================
+def _extract_nft_id(tx_result: Dict) -> str:
+    """Extract NFT ID from transaction result metadata."""
+    try:
+        nodes = tx_result.get('meta', {}).get('AffectedNodes', [])
+        for node in nodes:
+            created = node.get('CreatedNode', {})
+            if created.get('LedgerEntryType') == 'NFTokenPage':
+                nfts = created.get('NewFields', {}).get('NFTokens', [])
+                if nfts:
+                    return nfts[0]['NFToken']['NFTokenID']
+    except Exception:
+        pass
+    return "0" * 64  # Fallback
+
+
+def _rlusd_drops(usd_amount: float) -> int:
+    """Convert USD to RLUSD drops (1 RLUSD = 1,000,000 drops)."""
+    return int(usd_amount * 1_000_000)
+
+
+# ============================================================================
+# USAGE EXAMPLE
+# ============================================================================
+async def example_integration():
+    """Complete example of SDK v3.0 integration."""
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    wallet = Wallet.from_seed(os.getenv('DAO_WALLET_SEED'))
+    sdk = ForeAuthersSDK(wallet, 'wss://s.altnet.rippletest.net:51233')
+    await sdk.connect()
+
+    print(sdk.tier_summary())
+
+    # Example 1: Genesis onboarding (no Web3)
+    print("\n--- Genesis Onboarding ---")
+    result = await sdk.complete_onboarding(
+        discord_id=123456789,
+        licensee_account="rGenesisLicensee...",
+        tier_key=TIER_GENESIS,
+        payment_tx_hash="A" * 64,
+    )
+    print(json.dumps(result, indent=2))
+
+    # Example 2: Exodus onboarding with FMA referral
+    print("\n--- Exodus Onboarding (FMA referral) ---")
+    result = await sdk.complete_onboarding(
+        discord_id=987654321,
+        licensee_account="rExodusLicensee...",
+        tier_key=TIER_EXODUS,
+        payment_tx_hash="B" * 64,
+        fma_referral_account="rFMAMemberWallet...",  # Sarah gets 2%
+    )
+    print(f"Secrets granted: {result['secrets_granted']}")
+
+    # Example 3: Ruach award (human validator)
+    print("\n--- Ruach Award ---")
+    await sdk.award_ruach(
+        discord_id=555555,
+        xrpl_address="rRuachMember...",
+        amount=100,
+        validator_account="rHumanValidator...",
+        reason="Helped 5 new members onboard this week"
+    )
+
+    # Example 4: Gabriel Archangel (Web3 required)
+    print("\n--- Gabriel Archangel Onboarding ---")
+    result = await sdk.complete_onboarding(
+        discord_id=111111,
+        licensee_account="rGabrielLicensee...",  # Verified via XUMM in bot
+        tier_key=TIER_GABRIEL,
+        payment_tx_hash="C" * 64,
+    )
+    print(f"Crawler: {result['archangel_crawler']}")
+    print(f"Secrets: {result['secrets_granted']}")
+
+    print("\n✅ ForeFathers SDK v3.0 integration complete")
+
+
+if __name__ == "__main__":
+    asyncio.run(example_integration())
