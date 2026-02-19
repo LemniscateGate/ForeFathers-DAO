@@ -139,51 +139,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
   #slide-counter{display:none}
   .menu-label{font-size:.88rem}
   .grid-2x,.split-compare{grid-template-columns:1fr}
-  #ff-panel{position:fixed;inset:0;width:100%;height:100%;border-radius:0;bottom:auto;right:auto}
-  #ff-bubble{bottom:16px;right:16px}
 }
 
-/* CHAT BUBBLE */
-#ff-bubble{position:fixed;bottom:28px;right:28px;z-index:9100;display:flex;align-items:center;gap:10px;padding:0 20px 0 14px;height:52px;border-radius:26px;border:none;cursor:pointer;background:var(--gold);color:var(--obsidian);font-family:var(--M);font-size:.6rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;line-height:1.3;text-align:left;box-shadow:0 4px 20px rgba(201,168,76,.5),0 2px 8px rgba(0,0,0,.5);transition:background .2s,transform .2s,box-shadow .2s;animation:ffGlow 3.5s ease-in-out infinite}
-#ff-bubble:hover{background:var(--gold-bright);transform:translateY(-2px);box-shadow:0 8px 32px rgba(201,168,76,.65),0 2px 8px rgba(0,0,0,.5);animation:none}
-#ff-bubble.open{background:var(--charcoal);color:var(--gold);border:1px solid var(--border);animation:none}
-#ff-bubble.open:hover{background:var(--surface)}
-@keyframes ffGlow{0%,100%{box-shadow:0 4px 20px rgba(201,168,76,.5),0 2px 8px rgba(0,0,0,.5)}50%{box-shadow:0 4px 32px rgba(201,168,76,.8),0 2px 8px rgba(0,0,0,.5)}}
-.ff-bubble-lbl{line-height:1.3;pointer-events:none}
-#ff-unread{display:none;position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:#e05050;border:2px solid var(--obsidian);border-radius:50%;font-family:var(--M);font-size:.6rem;color:#fff;align-items:center;justify-content:center;font-weight:700}
-#ff-panel{position:fixed;bottom:94px;right:28px;z-index:9099;width:380px;height:510px;background:var(--navy);border:1px solid var(--border);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.85),0 0 0 1px rgba(201,168,76,.1);transform:translateY(12px) scale(.97);opacity:0;pointer-events:none;transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .25s ease}
-#ff-panel.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
-#ff-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--charcoal);border-bottom:1px solid var(--border);flex-shrink:0}
-.ff-hdr-l{display:flex;align-items:center;gap:10px}
-.ff-status{width:8px;height:8px;background:var(--teal-glow);border-radius:50%;flex-shrink:0;animation:pulse 2.2s infinite}
-.ff-title{font-family:var(--D);font-size:.8rem;color:var(--gold);letter-spacing:.05em}
-.ff-sub{font-family:var(--M);font-size:.56rem;color:var(--muted-2);margin-top:1px}
-.ff-hdr-r{display:flex;gap:4px}
-.ff-icn{background:none;border:none;cursor:pointer;color:var(--muted-2);padding:5px;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
-.ff-icn:hover{background:var(--surface);color:var(--white)}
-#ff-msgs{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
-#ff-msgs::-webkit-scrollbar{width:3px}
-#ff-msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-.fm{display:flex}
-.fm-ai{justify-content:flex-start}
-.fm-user{justify-content:flex-end}
-.fm-bub{max-width:90%;padding:10px 14px;border-radius:12px;font-family:var(--B);font-size:.92rem;line-height:1.6;color:var(--white);white-space:pre-wrap;word-break:break-word}
-.fm-ai .fm-bub{background:var(--surface);border:1px solid var(--border);border-radius:4px 12px 12px 12px}
-.fm-user .fm-bub{background:rgba(201,168,76,.14);border:1px solid rgba(201,168,76,.22);border-radius:12px 4px 12px 12px;color:var(--gold-bright)}
-.fm-typing{display:flex;align-items:center;gap:5px;padding:12px 16px}
-.fm-typing span{width:6px;height:6px;background:var(--gold-dim);border-radius:50%;animation:ffDot 1.1s ease-in-out infinite}
-.fm-typing span:nth-child(2){animation-delay:.18s}.fm-typing span:nth-child(3){animation-delay:.36s}
-@keyframes ffDot{0%,60%,100%{transform:translateY(0);opacity:.3}30%{transform:translateY(-5px);opacity:1}}
-#ff-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-.ff-chip{background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.2);border-radius:20px;padding:5px 11px;font-family:var(--M);font-size:.62rem;color:var(--muted);cursor:pointer;transition:all .15s}
-.ff-chip:hover{background:rgba(201,168,76,.14);border-color:rgba(201,168,76,.45);color:var(--gold)}
-#ff-foot{display:flex;align-items:flex-end;gap:8px;padding:10px 12px;border-top:1px solid var(--border);background:var(--charcoal);flex-shrink:0}
-#ff-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:var(--M);font-size:.76rem;color:var(--white);resize:none;outline:none;line-height:1.45;max-height:96px;overflow-y:auto;transition:border-color .15s}
-#ff-input::placeholder{color:var(--muted-2)}
-#ff-input:focus{border-color:rgba(201,168,76,.5)}
-#ff-send{width:38px;height:38px;background:var(--gold);border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--obsidian);flex-shrink:0;transition:background .15s,transform .15s,opacity .15s}
-#ff-send:hover:not(:disabled){background:var(--gold-bright);transform:scale(1.06)}
-#ff-send:disabled{opacity:.4;cursor:not-allowed;transform:none}
 </style>
 </head>
 <body>
@@ -680,72 +637,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
 </div><!-- end #track -->
 
-<!-- CHAT BUBBLE -->
-<button id="ff-bubble" onclick="ffToggle()" aria-label="Open Constitutional Assistant">
-  <span id="ff-unread">!</span>
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-  <span class="ff-bubble-lbl">Constitutional<br>Assistant</span>
-</button>
-
-<div id="ff-panel" role="dialog" aria-modal="true" aria-label="Constitutional Assistant">
-  <div id="ff-hdr">
-    <div class="ff-hdr-l"><span class="ff-status"></span><div><div class="ff-title">Constitutional Assistant</div><div class="ff-sub">ForeFathers DAO · Powered by Claude AI</div></div></div>
-    <div class="ff-hdr-r">
-      <button class="ff-icn" onclick="ffClear()" title="Clear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M5 6l1-3h12l1 3"/></svg></button>
-      <button class="ff-icn" onclick="ffClose()" title="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    </div>
-  </div>
-  <div id="ff-msgs" role="log" aria-live="polite">
-    <div class="fm fm-ai"><div class="fm-bub">Welcome to ForeFathers DAO. Ask me anything about membership, the Ruach economy, La'azar mechanics, onboarding, or the platform.</div></div>
-    <div id="ff-chips">
-      <button class="ff-chip" onclick="ffSuggest(this)">How do I join for free?</button>
-      <button class="ff-chip" onclick="ffSuggest(this)">What is La'azar Protocol?</button>
-      <button class="ff-chip" onclick="ffSuggest(this)">Explain Archangel tiers</button>
-      <button class="ff-chip" onclick="ffSuggest(this)">How does IP licensing work?</button>
-    </div>
-  </div>
-  <div id="ff-foot">
-    <textarea id="ff-input" placeholder="Ask about the platform…" rows="1" maxlength="1000" aria-label="Message" onkeydown="ffKey(event)" oninput="ffResize(this)"></textarea>
-    <button id="ff-send" onclick="ffSend()" aria-label="Send">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-    </button>
-  </div>
-</div>
-
 <script>
-// ═══════════════════════════════════════════════════════════════
-//  ONE THING TO SET: paste your Worker URL after deploying.
-//  Deploy worker.js with: wrangler deploy
-//  Then copy the URL it gives you and paste it below.
-// ═══════════════════════════════════════════════════════════════
-const WORKER_URL = 'https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/chat';
-
-const FF_SYSTEM = `You are the Constitutional Assistant for ForeFathers DAO — the world's first constitutionally governed IP licensing platform on the XRP Ledger. You are authoritative, precise, and direct. No filler phrases. Get straight to the answer.
-
-MEMBERSHIP TIERS:
-- Ruach: Free. Earned through good deeds. 1,000 Ruach = Genesis. Burns unlock food, shelter, showers, hotel. 3-tier multiplier: 1× individual / 2× community / 3× institutional. Humans judge — never algorithms.
-- Genesis: $100 RLUSD or 1,000 Ruach. 45 trade secrets. Individual IP licensing. $0.00004/verification. No Web3 wallet required. Discord: /join-genesis. Memo: PAYMENT:GENESIS:{discord_id}
-- Exodus: $1,000 RLUSD. 180 trade secrets. FMA Program — 2% referral revenue on every referred NFT sale forever. ISO20022 integration. La'azar perpetual cycle (LA.4). Discord: /join-exodus
-- Gabriel: $25,000 + $5,000/yr. Full IP stack. Constitutional AI Agent. Build on our stack — keep 75% royalties for 20 years. XRPL Permissioned DEX access.
-- Michael: $50,000 + $10,000/yr. Everything in Gabriel + CRYSTALS-Kyber post-quantum (FIPS 203). 4-chain: XRPL + Hedera + Flare + Zebec.
-- Raphael: $100,000+ + $20,000/yr. Everything in Michael + 5-level crisis mgmt. Multi-generational succession. DNA substrate encoding (R.1).
-- Early Adopter NFT: $5,000. First 1,000 only. 50% off Archangel tiers forever. 2% referral revenue perpetually.
-
-PLATFORM:
-- 303 trade secrets. 10 systems + 2 meta-methods. 105 integration pathways.
-- Möbius topology governance: 1 wallet = 1 vote. Ledger-enforced, not code-enforced.
-- La'azar Burn Protocol: NFT burn → Hook intercepts → EscrowFinish → 75% creator / 25% platform → NFT destroyed. Atomic. Unhackable.
-- Sovereign Identity: W3C DIDs on XRPL NFTs. AES-256 IPFS. $0.00004/verification vs $2-3 for Stripe.
-- XRPL Permissioned DEX: Live February 18, 2026 at 10:58 UTC.
-- IP Licensing: ARM Holdings model. Licensees keep 75% royalties for 20 years.
-
-5 RINGS OF ONBOARDING: I) Identity Verification — biometric, NFT on XRPL. II) NDA Signature — forefathers.dao/legal/{id}. III) Payment or Ruach Conversion. IV) Founder Multi-Sig Approval — 2 sigs for Archangel. V) Trade Secret Access Grant — license NFT minted.
-
-RUACH ECONOMY: Good deeds earn tokens, judged by humans only. No punishment. Burns unlock real services. POS micro-burn: 50% community / 25% merchant / 25% humanitarian. Scale: 100K merchants × $50K/mo × 1% = $6B/year funding 2.86M people.
-
-BOUNDARIES: No speculation on token prices or investment returns beyond stated projections. No legal or financial advice. No NDA-protected trade secret specifics. If unsure, direct to Discord. Keep answers concise.`;
-
-// ── SLIDES ──────────────────────────────────────────────────────
 const track   = document.getElementById('track');
 const slides  = document.querySelectorAll('.slide');
 const dots    = document.querySelectorAll('.sdot');
@@ -758,7 +650,6 @@ let cur = 0;
 
 function goTo(i) {
   if (i < 0 || i >= N) return;
-  // Close open menus on current slide before leaving
   slides[cur].querySelectorAll('.menu-btn.open').forEach(b => {
     b.classList.remove('open');
     b.nextElementSibling?.classList.remove('open');
@@ -774,7 +665,6 @@ function goTo(i) {
 }
 
 document.addEventListener('keydown', e => {
-  if (document.activeElement === document.getElementById('ff-input')) return;
   if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); goTo(cur + 1); }
   if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); goTo(cur - 1); }
 });
@@ -787,12 +677,10 @@ document.addEventListener('touchend', e => {
   if (Math.abs(dx) > 55 && dy < 80) goTo(cur + (dx > 0 ? 1 : -1));
 }, { passive:true });
 
-// ── MENU DROPDOWNS ───────────────────────────────────────────────
 function toggleMenu(btn) {
   const panel = btn.nextElementSibling;
-  if (!panel || !panel.classList.contains('menu-panel')) return; // nav-link buttons
+  if (!panel || !panel.classList.contains('menu-panel')) return;
   const wasOpen = btn.classList.contains('open');
-  // Close all on this slide
   btn.closest('.slide-content').querySelectorAll('.menu-btn.open').forEach(b => {
     b.classList.remove('open');
     b.nextElementSibling?.classList.remove('open');
@@ -801,101 +689,6 @@ function toggleMenu(btn) {
     btn.classList.add('open');
     panel.classList.add('open');
   }
-}
-
-// ── CHAT ─────────────────────────────────────────────────────────
-let ffOpen = false, ffBusy = false, ffHistory = [], ffAbort = null;
-
-function ffToggle() {
-  ffOpen = !ffOpen;
-  document.getElementById('ff-panel').classList.toggle('open', ffOpen);
-  document.getElementById('ff-bubble').classList.toggle('open', ffOpen);
-  if (ffOpen) { document.getElementById('ff-unread').style.display = 'none'; setTimeout(()=>document.getElementById('ff-input').focus(), 280); }
-}
-function ffClose() { ffOpen=false; document.getElementById('ff-panel').classList.remove('open'); document.getElementById('ff-bubble').classList.remove('open'); }
-function ffClear() {
-  if (ffBusy) { ffAbort?.abort(); ffBusy=false; document.getElementById('ff-send').disabled=false; }
-  ffHistory=[]; document.getElementById('ff-msgs').innerHTML='';
-  ffAI('Conversation cleared. How can I help you with ForeFathers DAO?');
-}
-function ffKey(e) { if (e.key==='Enter'&&!e.shiftKey){e.preventDefault();ffSend();} }
-function ffResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,96)+'px';}
-function ffScroll(){const m=document.getElementById('ff-msgs');m.scrollTop=m.scrollHeight;}
-function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-function ffUser(t){const d=document.createElement('div');d.className='fm fm-user';d.innerHTML=`<div class="fm-bub">${esc(t)}</div>`;document.getElementById('ff-msgs').appendChild(d);ffScroll();}
-function ffAI(t){const d=document.createElement('div');d.className='fm fm-ai';const b=document.createElement('div');b.className='fm-bub';b.textContent=t;d.appendChild(b);document.getElementById('ff-msgs').appendChild(d);ffScroll();return b;}
-function ffTyping(){const d=document.createElement('div');d.className='fm fm-ai';d.id='ff-typing';d.innerHTML='<div class="fm-bub fm-typing"><span></span><span></span><span></span></div>';document.getElementById('ff-msgs').appendChild(d);ffScroll();}
-function ffHideTyping(){document.getElementById('ff-typing')?.remove();}
-function ffSuggest(btn){document.getElementById('ff-chips')?.remove();document.getElementById('ff-input').value=btn.textContent.trim();ffSend();}
-
-async function ffSend() {
-  const inp = document.getElementById('ff-input');
-  const txt = inp.value.trim();
-  if (!txt || ffBusy) return;
-
-  if (WORKER_URL.includes('YOUR-WORKER')) {
-    ffAI('Deploy worker.js first, then paste your Worker URL into the WORKER_URL constant at the top of the script.');
-    return;
-  }
-
-  inp.value=''; inp.style.height='auto';
-  ffBusy=true;
-  const sb=document.getElementById('ff-send'); sb.disabled=true;
-  ffUser(txt);
-  ffHistory.push({role:'user', content:txt});
-  ffTyping();
-  ffAbort=new AbortController();
-
-  try {
-    const res = await fetch(WORKER_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({messages: ffHistory}),
-      signal: ffAbort.signal
-    });
-
-    ffHideTyping();
-
-    if (!res.ok) {
-      const e = await res.json().catch(()=>({}));
-      ffAI(e.error || `Error ${res.status} — please try again.`);
-      ffBusy=false; sb.disabled=false; return;
-    }
-
-    const bub = ffAI('');
-    const reader = res.body.getReader();
-    const dec = new TextDecoder();
-    let full='', buf='';
-
-    while (true) {
-      const {value, done} = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, {stream:true});
-      const lines = buf.split('\n');
-      buf = lines.pop();
-      for (const line of lines) {
-        if (!line.startsWith('data:')) continue;
-        const data = line.slice(5).trim();
-        if (data === '[DONE]') break;
-        try {
-          const p = JSON.parse(data);
-          const d = p.delta?.text || '';
-          if (d) { full += d; bub.textContent = full; ffScroll(); }
-        } catch {}
-      }
-    }
-
-    if (full) ffHistory.push({role:'assistant', content:full});
-    if (ffHistory.length > 40) ffHistory = ffHistory.slice(-40);
-    if (!ffOpen) document.getElementById('ff-unread').style.display='flex';
-
-  } catch(err) {
-    ffHideTyping();
-    if (err.name !== 'AbortError') ffAI('Connection failed. Check your Worker is deployed and the URL is correct.');
-  }
-
-  ffBusy=false; sb.disabled=false; inp.focus();
 }
 
 goTo(0);
