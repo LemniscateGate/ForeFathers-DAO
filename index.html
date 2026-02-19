@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ForeFathers DAO — The World We Build For</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --gold:      #c9a84c;
+  --gold-dim:  #8a6e30;
+  --cream:     #f0e8d0;
+  --white:     #f8f4ed;
+  --muted:     rgba(240,232,208,0.6);
+  --obsidian:  #0a0b0d;
+  --font-display: 'Cinzel', serif;
+  --font-body:    'Cormorant Garamond', serif;
+  --font-mono:    'JetBrains Mono', monospace;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--obsidian);
+  cursor: none;
+}
+
+/* ── CUSTOM CURSOR ── */
+.cursor {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  background: var(--gold);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: transform 0.08s ease, width 0.2s ease, height 0.2s ease, background 0.2s ease;
+  mix-blend-mode: screen;
+}
+.cursor-ring {
+  position: fixed;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(201,168,76,0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: transform 0.18s ease, width 0.25s ease, height 0.25s ease, opacity 0.2s ease;
+}
+body.on-nav .cursor { width: 6px; height: 6px; background: var(--white); }
+body.on-nav .cursor-ring { width: 24px; height: 24px; opacity: 0.4; }
+
+/* ── SCROLL CONTAINER ── */
+#scroll-container {
+  position: fixed;
+  inset: 0;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#scroll-container::-webkit-scrollbar { display: none; }
+
+/* ── EACH PAGE ── */
+.page {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* ── BACKGROUND IMAGE ── */
+.page-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform: scale(1.06);
+  transition: transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 1.2s ease;
+  filter: brightness(0.55) saturate(0.85);
+  will-change: transform, filter;
+}
+
+.page.is-active .page-bg {
+  transform: scale(1.0);
+  filter: brightness(0.72) saturate(1.05);
+}
+
+/* ── GRADIENT OVERLAYS ── */
+.page-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top,    rgba(10,11,13,0.88) 0%,  rgba(10,11,13,0.2) 45%, transparent 70%),
+    linear-gradient(to right,  rgba(10,11,13,0.55) 0%,  transparent 60%);
+  z-index: 1;
+}
+
+/* ── CONTENT ── */
+.page-content {
+  position: relative;
+  z-index: 2;
+  padding: 0 4rem 4rem;
+  max-width: 700px;
+  transform: translateY(24px);
+  opacity: 0;
+  transition: transform 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.15s,
+              opacity 0.9s ease 0.15s;
+}
+
+.page.is-active .page-content {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.page-index {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.page-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid rgba(201,168,76,0.35);
+  padding: 5px 14px;
+  border-radius: 20px;
+  margin-bottom: 1.2rem;
+  backdrop-filter: blur(4px);
+  background: rgba(201,168,76,0.06);
+}
+
+.page-tag::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+  animation: tagpulse 2.5s ease-in-out infinite;
+}
+
+@keyframes tagpulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  font-weight: 600;
+  line-height: 1.08;
+  color: var(--white);
+  margin-bottom: 0.6rem;
+  letter-spacing: -0.01em;
+}
+
+.page-location {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(240,232,208,0.5);
+  margin-bottom: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-location::before {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: rgba(201,168,76,0.4);
+}
+
+.page-quote {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  color: rgba(240,232,208,0.75);
+  line-height: 1.7;
+  max-width: 500px;
+  border-left: 2px solid rgba(201,168,76,0.4);
+  padding-left: 1.2rem;
+}
+
+/* ── SLIDE COUNTER (top-right) ── */
+#slide-counter {
+  position: fixed;
+  top: 2rem;
+  right: 2.5rem;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  color: rgba(240,232,208,0.5);
+}
+
+#slide-current {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--gold);
+  line-height: 1;
+}
+
+#slide-total {
+  color: rgba(201,168,76,0.4);
+  font-size: 0.75rem;
+}
+
+/* ── BRAND MARK (top-left) ── */
+#brand {
+  position: fixed;
+  top: 2rem;
+  left: 2.5rem;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.brand-logo {
+  width: 32px;
+  height: 32px;
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  color: rgba(201,168,76,0.7);
+  text-transform: uppercase;
+}
+
+/* ── PROGRESS DOTS (right side) ── */
+#progress-dots {
+  position: fixed;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(201,168,76,0.25);
+  cursor: pointer;
+  transition: all 0.35s ease;
+  border: 1px solid rgba(201,168,76,0.2);
+}
+
+.dot.active {
+  background: var(--gold);
+  width: 5px;
+  height: 22px;
+  border-radius: 3px;
+  border-color: var(--gold);
+}
+
+.dot:hover:not(.active) {
+  background: rgba(201,168,76,0.5);
+}
+
+/* ── SCROLL HINT (bottom-center, page 1 only) ── */
+#scroll-hint {
+  position: fixed;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+#scroll-hint.hidden { opacity: 0; pointer-events: none; }
+
+.scroll-hint-text {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(240,232,208,0.35);
+}
+
+.scroll-hint-arrow {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, rgba(201,168,76,0.5));
+  animation: scrollDrop 2s ease-in-out infinite;
+}
+
+@keyframes scrollDrop {
+  0%   { transform: scaleY(0); transform-origin: top; opacity: 0; }
+  50%  { transform: scaleY(1); transform-origin: top; opacity: 1; }
+  100% { transform: scaleY(1); transform-origin: bottom; opacity: 0; }
+}
+
+/* ── BACK LINK ── */
+#back-link {
+  position: fixed;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(201,168,76,0.45);
+  text-decoration: none;
+  border: 1px solid rgba(201,168,76,0.15);
+  padding: 6px 16px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+  background: rgba(10,11,13,0.4);
+  transition: all 0.2s ease;
+}
+#back-link:hover { color: var(--gold); border-color: rgba(201,168,76,0.4); }
+
+/* ── SWIPE INDICATOR ARROWS ── */
+.nav-arrow {
+  position: fixed;
+  right: 2rem;
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 50%;
+  cursor: pointer;
+  background: rgba(10,11,13,0.4);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  color: rgba(201,168,76,0.5);
+}
+.nav-arrow:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.08); }
+.nav-arrow svg { width: 16px; height: 16px; }
+#nav-up   { top: calc(50% - 56px); }
+#nav-down { top: calc(50% + 16px); }
+#nav-up.disabled, #nav-down.disabled { opacity: 0.2; pointer-events: none; }
+
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+  .page-content { padding: 0 1.8rem 3rem; }
+  #progress-dots, #nav-up, #nav-down { display: none; }
+  #slide-counter { top: 1.2rem; right: 1.5rem; }
+  #brand { top: 1.2rem; left: 1.5rem; }
+  .brand-name { display: none; }
+  #back-link { top: 1.2rem; font-size: 0.55rem; }
+}
+
+/* ── GRAIN OVERLAY ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9000;
+  opacity: 0.35;
+}
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursor-ring"></div>
+
+<!-- Brand -->
+<a href="#" id="brand">
+  <svg class="brand-logo" viewBox="0 0 32 32" fill="none">
+    <path d="M5 16 C5 9 9 5 16 5 C23 5 27 9 27 16 C27 23 23 27 16 27 C9 27 5 23 5 16Z" stroke="rgba(201,168,76,0.6)" stroke-width="1" fill="none"/>
+    <path d="M5 16 Q10 7 16 16 Q22 25 27 16" stroke="#c9a84c" stroke-width="1.4" fill="none"/>
+    <path d="M5 16 Q10 25 16 16 Q22 7 27 16" stroke="#c9a84c" stroke-width="0.7" fill="none" opacity="0.5"/>
+  </svg>
+  <span class="brand-name">ForeFathers DAO</span>
+</a>
+
+<!-- Back link -->
+<a href="forefathers_updated.html" id="back-link">← Back to Platform</a>
+
+<!-- Slide counter -->
+<div id="slide-counter">
+  <span id="slide-current">1</span>
+  <span id="slide-total">/ 5</span>
+</div>
+
+<!-- Progress dots -->
+<div id="progress-dots">
+  <div class="dot active"  onclick="goTo(0)"></div>
+  <div class="dot"         onclick="goTo(1)"></div>
+  <div class="dot"         onclick="goTo(2)"></div>
+  <div class="dot"         onclick="goTo(3)"></div>
+  <div class="dot"         onclick="goTo(4)"></div>
+</div>
+
+<!-- Nav arrows -->
+<button class="nav-arrow disabled" id="nav-up"   onclick="goTo(currentPage - 1)" aria-label="Previous">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+</button>
+<button class="nav-arrow" id="nav-down" onclick="goTo(currentPage + 1)" aria-label="Next">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+</button>
+
+<!-- Scroll hint -->
+<div id="scroll-hint">
+  <span class="scroll-hint-text">Scroll or Swipe</span>
+  <div class="scroll-hint-arrow"></div>
+</div>
+
+<!-- SCROLL CONTAINER -->
+<div id="scroll-container">
+
+  <!-- PAGE 1: Yellowstone Falls -->
+  <div class="page is-active" data-index="0">
+    <div class="page-bg" style="background-image: url('https://images.pexels.com/photos/31350302/pexels-photo-31350302/free-photo-of-majestic-view-of-lower-yellowstone-falls.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=2');"></div>
+    <div class="page-overlay"></div>
+    <div class="page-content">
+      <span class="page-index">01 — 05</span>
+      <div class="page-tag">Universal Access</div>
+      <h1 class="page-title">Lower<br>Yellowstone<br>Falls</h1>
+      <div class="page-location">Yellowstone National Park · Wyoming, USA</div>
+      <p class="page-quote">Power exists in nature and in people. Constitutional infrastructure ensures neither is gated.</p>
+    </div>
+  </div>
+
+  <!-- PAGE 2: Alpine Lake -->
+  <div class="page" data-index="1">
+    <div class="page-bg" style="background-image: url('https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=2');"></div>
+    <div class="page-overlay"></div>
+    <div class="page-content">
+      <span class="page-index">02 — 05</span>
+      <div class="page-tag">Sovereign Futures</div>
+      <h1 class="page-title">Alpine<br>Solitude</h1>
+      <div class="page-location">Mountain Wilderness · High Elevation</div>
+      <p class="page-quote">The summit is not the destination — the path is. Every good deed is a step toward something greater.</p>
+    </div>
+  </div>
+
+  <!-- PAGE 3: Aurora Borealis -->
+  <div class="page" data-index="2">
+    <div class="page-bg" style="background-image: url('https://images.pexels.com/photos/1933239/pexels-photo-1933239.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=2'); background-position: center 30%;"></div>
+    <div class="page-overlay"></div>
+    <div class="page-content">
+      <span class="page-index">03 — 05</span>
+      <div class="page-tag">Ruach Protocol</div>
+      <h1 class="page-title">Aurora<br>Borealis</h1>
+      <div class="page-location">Northern Lights · Arctic Circle</div>
+      <p class="page-quote">Spirit, breath, wind — רוּחַ. What moves unseen still shapes everything visible.</p>
+    </div>
+  </div>
+
+  <!-- PAGE 4: Antelope Canyon -->
+  <div class="page" data-index="3">
+    <div class="page-bg" style="background-image: url('https://images.pexels.com/photos/33041/antelope-canyon-lower-canyon-arizona-nature.jpg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=2'); background-position: center;"></div>
+    <div class="page-overlay"></div>
+    <div class="page-content">
+      <span class="page-index">04 — 05</span>
+      <div class="page-tag">Möbius Topology</div>
+      <h1 class="page-title">Antelope<br>Canyon</h1>
+      <div class="page-location">Slot Canyon · Arizona, USA</div>
+      <p class="page-quote">Light finds its way through any formation. Constitutional governance illuminates paths others overlook.</p>
+    </div>
+  </div>
+
+  <!-- PAGE 5: Open Ocean -->
+  <div class="page" data-index="4">
+    <div class="page-bg" style="background-image: url('https://images.pexels.com/photos/1001682/pexels-photo-1001682.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080&dpr=2');"></div>
+    <div class="page-overlay"></div>
+    <div class="page-content">
+      <span class="page-index">05 — 05</span>
+      <div class="page-tag">Universal Connectivity</div>
+      <h1 class="page-title">Open Ocean<br>at Golden<br>Hour</h1>
+      <div class="page-location">Pacific Horizon · Infinite Reach</div>
+      <p class="page-quote">No wall. No edge. No exclusion. The horizon belongs to everyone — and so does the platform.</p>
+    </div>
+  </div>
+
+</div><!-- end scroll-container -->
+
+<script>
+const container = document.getElementById('scroll-container');
+const pages     = document.querySelectorAll('.page');
+const dots      = document.querySelectorAll('.dot');
+const counter   = document.getElementById('slide-current');
+const hint      = document.getElementById('scroll-hint');
+const navUp     = document.getElementById('nav-up');
+const navDown   = document.getElementById('nav-down');
+const cursor    = document.getElementById('cursor');
+const ring      = document.getElementById('cursor-ring');
+
+let currentPage = 0;
+let isScrolling = false;
+
+// ── SET ACTIVE PAGE ──────────────────────────────────────────
+function setActive(idx) {
+  if (idx < 0 || idx >= pages.length) return;
+
+  pages.forEach((p, i) => p.classList.toggle('is-active', i === idx));
+  dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+
+  counter.textContent = idx + 1;
+  currentPage = idx;
+
+  // Scroll hint: hide after first page
+  if (idx > 0) hint.classList.add('hidden');
+  else hint.classList.remove('hidden');
+
+  // Arrow states
+  navUp.classList.toggle('disabled',   idx === 0);
+  navDown.classList.toggle('disabled', idx === pages.length - 1);
+}
+
+// ── GO TO PAGE ───────────────────────────────────────────────
+function goTo(idx) {
+  if (idx < 0 || idx >= pages.length) return;
+  pages[idx].scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── INTERSECTION OBSERVER ────────────────────────────────────
+const io = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+      const idx = parseInt(entry.target.dataset.index);
+      setActive(idx);
+    }
+  });
+}, { threshold: 0.6, root: container });
+
+pages.forEach(p => io.observe(p));
+
+// ── KEYBOARD NAVIGATION ──────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+    e.preventDefault();
+    goTo(currentPage + 1);
+  }
+  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    goTo(currentPage - 1);
+  }
+});
+
+// ── TOUCH SWIPE ───────────────────────────────────────────────
+let touchStartY = 0;
+container.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
+container.addEventListener('touchend', e => {
+  const dy = touchStartY - e.changedTouches[0].clientY;
+  if (Math.abs(dy) > 40) goTo(currentPage + (dy > 0 ? 1 : -1));
+}, { passive: true });
+
+// ── CUSTOM CURSOR ─────────────────────────────────────────────
+let cx = 0, cy = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { cx = e.clientX; cy = e.clientY; });
+(function animCursor() {
+  rx += (cx - rx) * 0.14;
+  ry += (cy - ry) * 0.14;
+  cursor.style.left = cx + 'px';
+  cursor.style.top  = cy + 'px';
+  ring.style.left   = rx + 'px';
+  ring.style.top    = ry + 'px';
+  requestAnimationFrame(animCursor);
+})();
+
+// Nav hover — shrink cursor on interactive elements
+document.querySelectorAll('a, button, .dot, .nav-arrow').forEach(el => {
+  el.addEventListener('mouseenter', () => document.body.classList.add('on-nav'));
+  el.addEventListener('mouseleave', () => document.body.classList.remove('on-nav'));
+});
+
+// ── INITIAL STATE ─────────────────────────────────────────────
+setActive(0);
+</script>
+</body>
+</html>
