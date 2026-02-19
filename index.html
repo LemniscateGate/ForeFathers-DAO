@@ -36,8 +36,8 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 /* TRACK & SLIDES */
 #track{display:flex;width:500vw;height:100vh;transition:transform .72s cubic-bezier(.77,0,.175,1);will-change:transform}
 .slide{position:relative;width:100vw;height:100vh;flex-shrink:0;overflow:hidden}
-.slide-bg{position:absolute;inset:0;background-size:cover;background-position:center;transform:scale(1.06);filter:brightness(.38) saturate(.8);transition:transform 1.4s cubic-bezier(.25,.46,.45,.94),filter 1.2s ease}
-.slide.active .slide-bg{transform:scale(1);filter:brightness(.48) saturate(.95)}
+.slide-bg{position:absolute;inset:0;background-size:cover;background-position:center;transform:scale(1.06);filter:brightness(.55) saturate(.9);transition:transform 1.4s cubic-bezier(.25,.46,.45,.94),filter 1.2s ease}
+.slide.active .slide-bg{transform:scale(1);filter:brightness(.72) saturate(1)}
 .slide-overlay{position:absolute;inset:0;background:linear-gradient(105deg,rgba(10,11,13,.92) 0%,rgba(10,11,13,.75) 45%,rgba(10,11,13,.3) 100%)}
 
 /* CONTENT */
@@ -50,11 +50,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
 /* MENU BUTTONS */
 .menu-stack{display:flex;flex-direction:column;gap:.5rem;width:100%;max-width:520px}
-.menu-btn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:1rem 1.4rem;border-radius:8px;cursor:pointer;text-align:left;background:rgba(26,32,48,.75);border:1px solid rgba(42,54,80,.7);backdrop-filter:blur(12px);transition:background .2s,border-color .2s,transform .15s;gap:12px}
-.menu-btn:hover{background:rgba(42,54,80,.85);border-color:rgba(201,168,76,.4);transform:translateX(4px)}
-.menu-btn.open{background:rgba(201,168,76,.1);border-color:var(--gold-dim);border-radius:8px 8px 0 0;transform:none}
+.menu-btn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:1rem 1.4rem;border-radius:8px;cursor:pointer;text-align:left;background:rgba(10,13,20,.28);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);transition:background .2s,border-color .2s,transform .15s;gap:12px}
+.menu-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(201,168,76,.5);transform:translateX(4px)}
+.menu-btn.open{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.35);border-radius:8px 8px 0 0;transform:none}
 .menu-btn-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
-.menu-icon{font-size:1.1rem;flex-shrink:0}
+
 .menu-label{font-family:var(--D);font-size:1rem;letter-spacing:.04em;color:var(--white)}
 .menu-badge{font-family:var(--M);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px;flex-shrink:0;white-space:nowrap}
 .menu-arrow{width:18px;height:18px;flex-shrink:0;color:var(--gold-dim);transition:transform .32s cubic-bezier(.4,0,.2,1)}
@@ -71,7 +71,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 .c-amber{background:rgba(212,136,42,.12);border:1px solid rgba(212,136,42,.4);color:var(--amber)}
 
 /* DROPDOWN PANEL */
-.menu-panel{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.4,0,.2,1);background:rgba(13,17,23,.92);border:1px solid rgba(42,54,80,.7);border-top:none;border-radius:0 0 8px 8px;backdrop-filter:blur(16px)}
+.menu-panel{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.4,0,.2,1);background:rgba(8,10,16,.55);border:1px solid rgba(255,255,255,.08);border-top:none;border-radius:0 0 8px 8px;backdrop-filter:blur(20px)}
 .menu-panel.open{max-height:700px}
 .mpi{padding:1.2rem 1.4rem}
 
@@ -97,6 +97,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 .split-compare{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:.8rem 0}
 .split-no{padding:.5rem .7rem;background:var(--surface);border-radius:4px;font-size:.75rem;color:var(--muted-2);text-decoration:line-through}
 .split-yes{padding:.5rem .7rem;background:rgba(74,138,90,.12);border-radius:4px;font-size:.75rem;color:#6abf7a}
+.split-yes::before{content:'+ ';font-weight:600}
 .grid-2x{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:.8rem 0}
 .grid-cell{background:rgba(26,32,48,.8);border:1px solid var(--border);border-radius:6px;padding:.8rem;font-size:.82rem}
 .grid-cell strong{color:var(--white);display:block;margin-bottom:.2rem;font-family:var(--D);font-size:.82rem}
@@ -256,7 +257,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">◈</span><span class="menu-label">What We Built</span><span class="menu-badge c-gold">Platform Overview</span></div>
+          <div class="menu-btn-left"><span class="menu-label">What We Built</span><span class="menu-badge c-gold">Platform Overview</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -279,7 +280,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">⚡</span><span class="menu-label">XRPL DEX — Now Live</span><span class="menu-badge c-teal">Feb 18, 2026</span></div>
+          <div class="menu-btn-left"><span class="menu-label">XRPL DEX — Now Live</span><span class="menu-badge c-teal">Feb 18, 2026</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -295,7 +296,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="goTo(1)">
-          <div class="menu-btn-left"><span class="menu-icon">🌊</span><span class="menu-label">Members Only</span><span class="menu-badge c-gold">6 Tiers · Free to $100K+</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Members Only</span><span class="menu-badge c-gold">6 Tiers · Free to $100K+</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
         </button>
       </div>
@@ -321,7 +322,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">🌊</span><span class="menu-label">Ruach</span><span class="menu-badge c-teal">Free · Earned Through Good Deeds</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Ruach</span><span class="menu-badge c-teal">Free · Earned Through Good Deeds</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -338,7 +339,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">🌱</span><span class="menu-label">Genesis</span><span class="menu-badge c-sage">$100 RLUSD or 1,000 Ruach</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Genesis</span><span class="menu-badge c-sage">$100 RLUSD or 1,000 Ruach</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -355,7 +356,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">🔥</span><span class="menu-label">Exodus</span><span class="menu-badge c-ember">$1,000 · FMA Eligible</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Exodus</span><span class="menu-badge c-ember">$1,000 · FMA Eligible</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -372,7 +373,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">⚡</span><span class="menu-label">Archangel Tiers</span><span class="menu-badge c-sky">Gabriel · Michael · Raphael</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Archangel Tiers</span><span class="menu-badge c-sky">Gabriel · Michael · Raphael</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -392,7 +393,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">⭐</span><span class="menu-label">Early Adopter NFT</span><span class="menu-badge c-amber">$5,000 · First 1,000 Only</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Early Adopter NFT</span><span class="menu-badge c-amber">$5,000 · First 1,000 Only</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -427,7 +428,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">◉</span><span class="menu-label">How to Earn Ruach</span><span class="menu-badge c-teal">3 Multiplier Tiers</span></div>
+          <div class="menu-btn-left"><span class="menu-label">How to Earn Ruach</span><span class="menu-badge c-teal">3 Multiplier Tiers</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -448,22 +449,22 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">🔥</span><span class="menu-label">What Ruach Unlocks</span><span class="menu-badge c-amber">Burn for Real Services</span></div>
+          <div class="menu-btn-left"><span class="menu-label">What Ruach Unlocks</span><span class="menu-badge c-amber">Burn for Real Services</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
           <div class="grid-2x">
-            <div class="grid-cell"><strong>🍎 Food Access</strong><span>Permissioned NFT at partner vendors</span></div>
-            <div class="grid-cell"><strong>🏠 Shelter</strong><span>Emergency housing via burn verification</span></div>
-            <div class="grid-cell"><strong>🚿 Hot Showers</strong><span>Hygiene access — dignity restored</span></div>
-            <div class="grid-cell"><strong>🏨 Hotel Access</strong><span>Short-term accommodation network</span></div>
+            <div class="grid-cell"><strong>Food Access</strong><span>Permissioned NFT at partner vendors</span></div>
+            <div class="grid-cell"><strong>Shelter</strong><span>Emergency housing via burn verification</span></div>
+            <div class="grid-cell"><strong>Hot Showers</strong><span>Hygiene access — dignity restored</span></div>
+            <div class="grid-cell"><strong>Hotel Access</strong><span>Short-term accommodation network</span></div>
           </div>
         </div></div>
       </div>
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">∞</span><span class="menu-label">La'azar Burn Economics</span><span class="menu-badge c-gold">75% Creator · 25% Platform</span></div>
+          <div class="menu-btn-left"><span class="menu-label">La'azar Burn Economics</span><span class="menu-badge c-gold">75% Creator · 25% Platform</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -503,7 +504,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">∞</span><span class="menu-label">La'azar Atomic Sequence</span><span class="menu-badge c-gold">How the Burn Works</span></div>
+          <div class="menu-btn-left"><span class="menu-label">La'azar Atomic Sequence</span><span class="menu-badge c-gold">How the Burn Works</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -517,22 +518,22 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">◈</span><span class="menu-label">Möbius Governance</span><span class="menu-badge c-teal">vs Standard DAO</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Möbius Governance</span><span class="menu-badge c-teal">vs Standard DAO</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
           <div class="split-compare">
-            <div class="split-no">Token-weighted → whale control</div><div class="split-yes">✓ 1 wallet = 1 vote</div>
-            <div class="split-no">Code-enforced (hackable)</div><div class="split-yes">✓ Ledger-enforced (unhackable)</div>
-            <div class="split-no">Centralized KYC dependency</div><div class="split-yes">✓ Sovereign identity system</div>
-            <div class="split-no">Opaque decisions</div><div class="split-yes">✓ Constitutional on-chain record</div>
+            <div class="split-no">Token-weighted → whale control</div><div class="split-yes">1 wallet = 1 vote</div>
+            <div class="split-no">Code-enforced (hackable)</div><div class="split-yes">Ledger-enforced (unhackable)</div>
+            <div class="split-no">Centralized KYC dependency</div><div class="split-yes">Sovereign identity system</div>
+            <div class="split-no">Opaque decisions</div><div class="split-yes">Constitutional on-chain record</div>
           </div>
         </div></div>
       </div>
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">△</span><span class="menu-label">Identity Cost Comparison</span><span class="menu-badge c-sage">4,700× Cheaper</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Identity Cost Comparison</span><span class="menu-badge c-sage">4,700× Cheaper</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -547,7 +548,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">◆</span><span class="menu-label">IP Licensing Model</span><span class="menu-badge c-sky">ARM Holdings Style</span></div>
+          <div class="menu-btn-left"><span class="menu-label">IP Licensing Model</span><span class="menu-badge c-sky">ARM Holdings Style</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -586,7 +587,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">📋</span><span class="menu-label">The 5 Rings of Onboarding</span><span class="menu-badge c-gold">How It Works</span></div>
+          <div class="menu-btn-left"><span class="menu-label">The 5 Rings of Onboarding</span><span class="menu-badge c-gold">How It Works</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -600,7 +601,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">🌊</span><span class="menu-label">Join Free — Earn Ruach</span><span class="menu-badge c-teal">No Money Required</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Join Free — Earn Ruach</span><span class="menu-badge c-teal">No Money Required</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -614,7 +615,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">🌱</span><span class="menu-label">Join Genesis</span><span class="menu-badge c-sage">$100 RLUSD or 1,000 Ruach</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Join Genesis</span><span class="menu-badge c-sage">$100 RLUSD or 1,000 Ruach</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -626,7 +627,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">🔥</span><span class="menu-label">Join Exodus</span><span class="menu-badge c-ember">$1,000 · FMA Eligible</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Join Exodus</span><span class="menu-badge c-ember">$1,000 · FMA Eligible</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -640,7 +641,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">⚡</span><span class="menu-label">Apply — Archangel</span><span class="menu-badge c-sky">Gabriel · Michael · Raphael</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Apply — Archangel</span><span class="menu-badge c-sky">Gabriel · Michael · Raphael</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
@@ -654,7 +655,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 
       <div class="menu-group">
         <button class="menu-btn" onclick="toggleMenu(this)">
-          <div class="menu-btn-left"><span class="menu-icon">⭐</span><span class="menu-label">Early Adopter NFT</span><span class="menu-badge c-amber">$5,000 · First 1,000 Only</span></div>
+          <div class="menu-btn-left"><span class="menu-label">Early Adopter NFT</span><span class="menu-badge c-amber">$5,000 · First 1,000 Only</span></div>
           <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="menu-panel"><div class="mpi">
