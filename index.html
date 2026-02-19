@@ -73,7 +73,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 .c-amber{background:rgba(212,136,42,.12);border:1px solid rgba(212,136,42,.4);color:var(--amber)}
 
 /* DROPDOWN PANEL */
-.menu-panel{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.4,0,.2,1);background:rgba(4,6,12,.5);border:none;border-left:1px solid rgba(201,168,76,.15);border-radius:0;backdrop-filter:blur(20px)}
+.menu-panel{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.4,0,.2,1);background:transparent;border:none;border-left:1px solid rgba(201,168,76,.15);border-radius:0}
 .menu-panel.open{max-height:700px}
 .mpi{padding:1rem 1rem 1rem 1.2rem}
 
@@ -713,12 +713,12 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 </div>
 
 <script>
-// ── CONFIG ───────────────────────────────────────────────────────
-// Option A (live now): paste your Anthropic API key below.
-// Option B (production): deploy worker.js and paste the Worker URL instead,
-//   then swap the ffSend fetch target to WORKER_URL.
-const ANTHROPIC_KEY  = 'YOUR-ANTHROPIC-API-KEY-HERE';
-const WORKER_URL     = ''; // optional: your deployed Worker URL
+// ═══════════════════════════════════════════════════════════════
+//  ONE THING TO SET: paste your Worker URL after deploying.
+//  Deploy worker.js with: wrangler deploy
+//  Then copy the URL it gives you and paste it below.
+// ═══════════════════════════════════════════════════════════════
+const WORKER_URL = 'https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev/chat';
 
 const FF_SYSTEM = `You are the Constitutional Assistant for ForeFathers DAO — the world's first constitutionally governed IP licensing platform on the XRP Ledger. You are authoritative, precise, and direct. No filler phrases. Get straight to the answer.
 
@@ -726,24 +726,24 @@ MEMBERSHIP TIERS:
 - Ruach: Free. Earned through good deeds. 1,000 Ruach = Genesis. Burns unlock food, shelter, showers, hotel. 3-tier multiplier: 1× individual / 2× community / 3× institutional. Humans judge — never algorithms.
 - Genesis: $100 RLUSD or 1,000 Ruach. 45 trade secrets. Individual IP licensing. $0.00004/verification. No Web3 wallet required. Discord: /join-genesis. Memo: PAYMENT:GENESIS:{discord_id}
 - Exodus: $1,000 RLUSD. 180 trade secrets. FMA Program — 2% referral revenue on every referred NFT sale forever. ISO20022 integration. La'azar perpetual cycle (LA.4). Discord: /join-exodus
-- Gabriel: $25,000 + $5,000/yr. Full IP stack. Constitutional AI Agent. Build on our stack — keep 75% royalties for 20 years. 25% to platform. XRPL Permissioned DEX access.
-- Michael: $50,000 + $10,000/yr. Everything in Gabriel + CRYSTALS-Kyber post-quantum cryptography (FIPS 203). 4-chain: XRPL + Hedera + Flare + Zebec. Axelar cross-chain bridge.
-- Raphael: $100,000+ + $20,000/yr. Everything in Michael + 5-level crisis management. Multi-generational succession. DNA substrate data encoding (R.1). Institutional feeds.
-- Early Adopter NFT: $5,000. First 1,000 only. 50% off Archangel tiers forever. 2% referral revenue perpetually. Discord: /early-adopter
+- Gabriel: $25,000 + $5,000/yr. Full IP stack. Constitutional AI Agent. Build on our stack — keep 75% royalties for 20 years. XRPL Permissioned DEX access.
+- Michael: $50,000 + $10,000/yr. Everything in Gabriel + CRYSTALS-Kyber post-quantum (FIPS 203). 4-chain: XRPL + Hedera + Flare + Zebec.
+- Raphael: $100,000+ + $20,000/yr. Everything in Michael + 5-level crisis mgmt. Multi-generational succession. DNA substrate encoding (R.1).
+- Early Adopter NFT: $5,000. First 1,000 only. 50% off Archangel tiers forever. 2% referral revenue perpetually.
 
 PLATFORM:
 - 303 trade secrets. 10 systems + 2 meta-methods. 105 integration pathways.
 - Möbius topology governance: 1 wallet = 1 vote. Ledger-enforced, not code-enforced.
-- La'azar Burn Protocol: NFT burn → Hook intercepts → EscrowFinish → 75% creator / 25% platform → NFT destroyed to black hole. Atomic. Unhackable.
+- La'azar Burn Protocol: NFT burn → Hook intercepts → EscrowFinish → 75% creator / 25% platform → NFT destroyed. Atomic. Unhackable.
 - Sovereign Identity: W3C DIDs on XRPL NFTs. AES-256 IPFS. $0.00004/verification vs $2-3 for Stripe.
-- XRPL Permissioned DEX: Live as of February 18, 2026 at 10:58 UTC.
-- IP Licensing: ARM Holdings model. Licensees build on our stack, keep 75% royalties for 20 years.
+- XRPL Permissioned DEX: Live February 18, 2026 at 10:58 UTC.
+- IP Licensing: ARM Holdings model. Licensees keep 75% royalties for 20 years.
 
-5 RINGS OF ONBOARDING: I) Identity Verification — biometric, NFT anchored on XRPL. II) NDA Signature — stored at forefathers.dao/legal/{id}. III) Payment or Ruach Conversion. IV) Founder Multi-Sig Approval — 2 signatures for Archangel. V) Trade Secret Access Grant — license NFT minted.
+5 RINGS OF ONBOARDING: I) Identity Verification — biometric, NFT on XRPL. II) NDA Signature — forefathers.dao/legal/{id}. III) Payment or Ruach Conversion. IV) Founder Multi-Sig Approval — 2 sigs for Archangel. V) Trade Secret Access Grant — license NFT minted.
 
-RUACH ECONOMY: Good deeds earn Ruach tokens, judged by humans only. No punishment system. Burns unlock real services. POS micro-burn: 50% community / 25% merchant / 25% humanitarian. Scale: 100K merchants × $50K/mo × 1% = $6B/year funding 2.86M people.
+RUACH ECONOMY: Good deeds earn tokens, judged by humans only. No punishment. Burns unlock real services. POS micro-burn: 50% community / 25% merchant / 25% humanitarian. Scale: 100K merchants × $50K/mo × 1% = $6B/year funding 2.86M people.
 
-BOUNDARIES: Do not speculate on token prices or investment returns beyond stated projections. Do not give legal or financial advice. Do not reveal NDA-protected trade secret specifics. If you don't know something, say so and direct them to Discord. Keep answers concise. Use bullet points only for lists.`;
+BOUNDARIES: No speculation on token prices or investment returns beyond stated projections. No legal or financial advice. No NDA-protected trade secret specifics. If unsure, direct to Discord. Keep answers concise.`;
 
 // ── SLIDES ──────────────────────────────────────────────────────
 const track   = document.getElementById('track');
@@ -833,56 +833,68 @@ async function ffSend() {
   const inp = document.getElementById('ff-input');
   const txt = inp.value.trim();
   if (!txt || ffBusy) return;
+
+  if (WORKER_URL.includes('YOUR-WORKER')) {
+    ffAI('Deploy worker.js first, then paste your Worker URL into the WORKER_URL constant at the top of the script.');
+    return;
+  }
+
   inp.value=''; inp.style.height='auto';
-  ffBusy=true; const sb=document.getElementById('ff-send'); sb.disabled=true;
-  ffUser(txt); ffHistory.push({role:'user',content:txt}); ffTyping();
+  ffBusy=true;
+  const sb=document.getElementById('ff-send'); sb.disabled=true;
+  ffUser(txt);
+  ffHistory.push({role:'user', content:txt});
+  ffTyping();
   ffAbort=new AbortController();
 
-  // Use Worker if configured, otherwise call Anthropic directly
-  const useWorker = WORKER_URL && !WORKER_URL.includes('YOUR-SUBDOMAIN');
-  const endpoint  = useWorker
-    ? WORKER_URL
-    : 'https://api.anthropic.com/v1/messages';
-
-  const headers = useWorker
-    ? { 'Content-Type': 'application/json' }
-    : { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' };
-
-  const body = useWorker
-    ? JSON.stringify({ messages: ffHistory })
-    : JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:1024, system:FF_SYSTEM, stream:true, messages:ffHistory });
-
   try {
-    const res = await fetch(endpoint, { method:'POST', headers, body, signal:ffAbort.signal });
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({messages: ffHistory}),
+      signal: ffAbort.signal
+    });
+
     ffHideTyping();
+
     if (!res.ok) {
       const e = await res.json().catch(()=>({}));
-      const msg = e.error?.message || e.error || `Error ${res.status}`;
-      ffAI(msg.includes('API key') ? 'Add your Anthropic API key to the ANTHROPIC_KEY constant at the top of the script.' : msg);
+      ffAI(e.error || `Error ${res.status} — please try again.`);
       ffBusy=false; sb.disabled=false; return;
     }
-    const bub=ffAI(''); const reader=res.body.getReader(); const dec=new TextDecoder(); let full='',buf='';
-    while(true){
-      const {value,done}=await reader.read(); if(done)break;
-      buf+=dec.decode(value,{stream:true}); const lines=buf.split('\n'); buf=lines.pop();
-      for(const line of lines){
-        if(!line.startsWith('data:'))continue;
-        const data=line.slice(5).trim(); if(data==='[DONE]')break;
-        try{
-          const p=JSON.parse(data);
-          // Anthropic streaming format
-          const d = p.delta?.text || (p.type==='content_block_delta'&&p.delta?.type==='text_delta'?p.delta.text:'') || '';
-          if(d){full+=d;bub.textContent=full;ffScroll();}
-        }catch{}
+
+    const bub = ffAI('');
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let full='', buf='';
+
+    while (true) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream:true});
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const data = line.slice(5).trim();
+        if (data === '[DONE]') break;
+        try {
+          const p = JSON.parse(data);
+          const d = p.delta?.text || '';
+          if (d) { full += d; bub.textContent = full; ffScroll(); }
+        } catch {}
       }
     }
-    if(full)ffHistory.push({role:'assistant',content:full});
-    if(ffHistory.length>40)ffHistory=ffHistory.slice(-40);
-    if(!ffOpen)document.getElementById('ff-unread').style.display='flex';
+
+    if (full) ffHistory.push({role:'assistant', content:full});
+    if (ffHistory.length > 40) ffHistory = ffHistory.slice(-40);
+    if (!ffOpen) document.getElementById('ff-unread').style.display='flex';
+
   } catch(err) {
     ffHideTyping();
-    if(err.name!=='AbortError')ffAI('Unable to reach the assistant. Check your connection and try again.');
+    if (err.name !== 'AbortError') ffAI('Connection failed. Check your Worker is deployed and the URL is correct.');
   }
+
   ffBusy=false; sb.disabled=false; inp.focus();
 }
 
