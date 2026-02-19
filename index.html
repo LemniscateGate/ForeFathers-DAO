@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ForeFathers DAO — Constitutional Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   FOREFATHERS DAO — DESIGN SYSTEM
+   ============================================================ */
+:root {
+  --obsidian:     #0a0b0d;
+  --deep-navy:    #0d1117;
+  --charcoal:     #13181f;
+  --surface:      #1a2030;
+  --surface-2:    #212840;
+  --border:       #2a3650;
+  --border-light: #3a4a6a;
+  --gold:         #c9a84c;
+  --gold-bright:  #e8c56a;
+  --gold-dim:     #8a6e30;
+  --amber:        #d4882a;
+  --cream:        #f0e8d0;
+  --white:        #f8f4ed;
+  --muted:        #8a9ab8;
+  --muted-2:      #5a6a85;
+  --ruach-teal:   #1a9e8f;
+  --ruach-glow:   #22d4bf;
+  --genesis-sage: #4a8a5a;
+  --exodus-ember: #b85a20;
+  --gabriel-sky:  #2a6aaa;
+  --michael-deep: #4a2aaa;
+  --raphael-rose: #8a2a5a;
+  --font-display: 'Cinzel', serif;
+  --font-body:    'Cormorant Garamond', serif;
+  --font-mono:    'JetBrains Mono', monospace;
+  --radius:       4px;
+  --radius-lg:    8px;
+  --transition:   all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  background: var(--obsidian);
+  color: var(--white);
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.4;
+}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--obsidian); }
+::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; line-height: 1.2; }
+.mono { font-family: var(--font-mono); }
+
+/* NAV */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 900;
+  background: rgba(10, 11, 13, 0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.nav-logo-mark { width: 36px; height: 36px; }
+.nav-logo-text { font-family: var(--font-display); font-size: 1rem; letter-spacing: 0.15em; color: var(--gold); text-transform: uppercase; }
+.nav-links { display: flex; align-items: center; gap: 0; list-style: none; }
+.nav-links a {
+  display: block; padding: 0 1.0rem; height: 64px; line-height: 64px;
+  color: var(--muted); text-decoration: none; font-family: var(--font-mono);
+  font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+  transition: var(--transition); border-bottom: 2px solid transparent;
+}
+.nav-links a:hover, .nav-links a.active { color: var(--gold); border-bottom-color: var(--gold); }
+.nav-cta {
+  background: var(--gold); color: var(--obsidian) !important;
+  padding: 0.45rem 1.2rem !important; height: auto !important; line-height: normal !important;
+  border-radius: var(--radius); font-weight: 500; border-bottom: none !important; letter-spacing: 0.08em;
+}
+.nav-cta:hover { background: var(--gold-bright) !important; color: var(--obsidian) !important; }
+.dex-live-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(26, 158, 143, 0.15); border: 1px solid var(--ruach-teal);
+  border-radius: 20px; padding: 4px 12px; font-family: var(--font-mono);
+  font-size: 0.65rem; color: var(--ruach-glow); letter-spacing: 0.1em; text-transform: uppercase;
+}
+.dex-live-badge .pulse { width: 6px; height: 6px; background: var(--ruach-glow); border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+
+/* SECTIONS */
+section { min-height: 100vh; padding: 120px 0 80px; position: relative; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+.divider { height: 1px; background: linear-gradient(90deg, transparent, var(--gold-dim), transparent); margin: 4rem 0; }
+.section-label {
+  font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.25em;
+  text-transform: uppercase; color: var(--gold); margin-bottom: 1rem;
+  display: flex; align-items: center; gap: 12px;
+}
+.section-label::after { content: ''; flex: 1; max-width: 60px; height: 1px; background: var(--gold-dim); }
+
+/* CARDS */
+.card { background: var(--charcoal); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; transition: var(--transition); }
+.card:hover { border-color: var(--border-light); transform: translateY(-2px); }
+
+/* DROPDOWNS */
+.dropdown-group { margin-bottom: 0.5rem; }
+.dropdown-trigger {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 1.2rem 1.5rem; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); cursor: pointer; transition: var(--transition);
+  font-family: var(--font-display); font-size: 1.05rem; color: var(--white); text-align: left;
+}
+.dropdown-trigger:hover { background: var(--surface-2); border-color: var(--border-light); }
+.dropdown-trigger.open { background: var(--surface-2); border-color: var(--gold-dim); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.dropdown-arrow { width: 18px; height: 18px; flex-shrink: 0; transition: transform 0.3s ease; color: var(--gold); }
+.dropdown-trigger.open .dropdown-arrow { transform: rotate(180deg); }
+.dropdown-body { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); background: var(--charcoal); border: 1px solid var(--border); border-top: none; border-bottom-left-radius: var(--radius); border-bottom-right-radius: var(--radius); }
+.dropdown-body.open { max-height: 1200px; }
+.dropdown-inner { padding: 1.5rem; }
+
+/* BADGES */
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; }
+.badge-gold { background: rgba(201, 168, 76, 0.15); border: 1px solid var(--gold-dim); color: var(--gold); }
+.badge-teal { background: rgba(26, 158, 143, 0.15); border: 1px solid var(--ruach-teal); color: var(--ruach-glow); }
+.badge-sage { background: rgba(74, 138, 90, 0.15); border: 1px solid var(--genesis-sage); color: #6abf7a; }
+.badge-ember { background: rgba(184, 90, 32, 0.15); border: 1px solid var(--exodus-ember); color: #e08050; }
+.badge-sky   { background: rgba(42, 106, 170, 0.15); border: 1px solid var(--gabriel-sky); color: #60aaee; }
+.badge-violet{ background: rgba(74, 42, 170, 0.15); border: 1px solid var(--michael-deep); color: #9070ee; }
+.badge-rose  { background: rgba(138, 42, 90, 0.15); border: 1px solid var(--raphael-rose); color: #e060a0; }
+
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 0.75rem 1.8rem; border-radius: var(--radius); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; font-weight: 500; cursor: pointer; border: none; transition: var(--transition); }
+.btn-gold { background: var(--gold); color: var(--obsidian); }
+.btn-gold:hover { background: var(--gold-bright); transform: translateY(-1px); }
+.btn-outline { background: transparent; color: var(--gold); border: 1px solid var(--gold-dim); }
+.btn-outline:hover { background: rgba(201, 168, 76, 0.1); border-color: var(--gold); }
+.btn-teal { background: var(--ruach-teal); color: var(--obsidian); }
+.btn-teal:hover { background: var(--ruach-glow); transform: translateY(-1px); }
+
+/* STAT BOXES */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+.stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem; text-align: center; }
+.stat-value { font-family: var(--font-display); font-size: 1.8rem; color: var(--gold); display: block; margin-bottom: 0.3rem; }
+.stat-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; }
+
+/* GRIDS */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+@media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+/* HERO */
+.hero-section { min-height: 100vh; display: flex; align-items: center; position: relative; overflow: hidden; background: radial-gradient(ellipse at 30% 50%, rgba(201, 168, 76, 0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(26, 158, 143, 0.05) 0%, transparent 50%); }
+.hero-grid-bg { position: absolute; inset: 0; background-image: linear-gradient(rgba(42, 54, 80, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(42, 54, 80, 0.4) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%); pointer-events: none; }
+.hero-eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 12px; }
+.hero-eyebrow::before { content: ''; width: 40px; height: 1px; background: var(--gold); }
+.hero-title { font-family: var(--font-display); font-size: clamp(2.8rem, 6vw, 5.5rem); font-weight: 700; line-height: 1.05; margin-bottom: 1.5rem; letter-spacing: -0.01em; }
+.hero-title .accent { color: var(--gold); }
+.hero-subtitle { font-size: 1.25rem; color: var(--muted); max-width: 580px; margin-bottom: 2.5rem; line-height: 1.7; }
+.hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 3rem; }
+.hero-metrics { display: flex; gap: 2.5rem; flex-wrap: wrap; }
+.hero-metric { display: flex; flex-direction: column; }
+.hero-metric-value { font-family: var(--font-display); font-size: 1.6rem; color: var(--gold); font-weight: 600; }
+.hero-metric-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted-2); letter-spacing: 0.15em; text-transform: uppercase; }
+.hero-visual { position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 45%; display: flex; align-items: center; justify-content: center; }
+.hero-lemniscate { width: 480px; height: 480px; opacity: 0.6; animation: slowRotate 40s linear infinite; }
+@keyframes slowRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+#home { padding-top: 64px; }
+
+/* FEATURE GRID */
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin: 3rem 0; }
+.feature-cell { background: var(--charcoal); padding: 2rem; transition: var(--transition); }
+.feature-cell:hover { background: var(--surface); }
+.feature-title { font-family: var(--font-display); font-size: 1.1rem; color: var(--gold); margin-bottom: 0.6rem; }
+.feature-desc { font-size: 0.95rem; color: var(--muted); line-height: 1.6; }
+
+/* TICKER */
+.ticker-wrap { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 0.6rem 0; overflow: hidden; margin: 2rem 0; }
+.ticker { display: flex; gap: 4rem; animation: ticker 30s linear infinite; white-space: nowrap; }
+.ticker-item { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; color: var(--muted-2); text-transform: uppercase; }
+.ticker-item span { color: var(--gold); }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* DEX ANNOUNCEMENT */
+.dex-announcement { background: linear-gradient(135deg, rgba(26, 158, 143, 0.1), rgba(26, 158, 143, 0.05)); border: 1px solid var(--ruach-teal); border-left: 4px solid var(--ruach-glow); border-radius: var(--radius); padding: 1.5rem 2rem; margin-bottom: 2rem; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1.5rem; }
+.dex-announcement-title { font-family: var(--font-display); font-size: 1.1rem; color: var(--ruach-glow); margin-bottom: 0.3rem; }
+.dex-announcement-text { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); }
+
+/* CONNECTIVITY BANNER */
+.connectivity-banner { background: linear-gradient(135deg, rgba(26, 158, 143, 0.12) 0%, rgba(201, 168, 76, 0.08) 100%); border: 1px solid var(--ruach-teal); border-radius: var(--radius-lg); padding: 1.2rem 1.8rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 3rem; }
+.connectivity-banner-text { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ruach-glow); letter-spacing: 0.06em; }
+.connectivity-banner-text strong { color: var(--white); font-weight: 500; }
+
+/* TIER PATH */
+.tier-overview-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 3rem; }
+.tier-pill { padding: 1rem 0.8rem; text-align: center; border-right: 1px solid var(--border); cursor: pointer; transition: var(--transition); text-decoration: none; }
+.tier-pill:last-child { border-right: none; }
+.tier-pill:hover { background: var(--surface); }
+.tier-pill-name { font-family: var(--font-display); font-size: 0.75rem; color: var(--white); display: block; margin-bottom: 0.2rem; }
+.tier-pill-price { font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted-2); display: block; }
+.tier-path { display: flex; align-items: center; gap: 0; margin: 2rem 0; overflow-x: auto; padding-bottom: 0.5rem; }
+.tier-path-step { display: flex; flex-direction: column; align-items: center; min-width: 100px; }
+.tier-path-node { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; }
+.tier-path-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--muted-2); text-align: center; letter-spacing: 0.08em; text-transform: uppercase; }
+.tier-path-connector { flex: 1; height: 2px; background: linear-gradient(90deg, var(--border), var(--gold-dim)); margin-top: -24px; min-width: 40px; }
+
+/* TIER FEATURE LIST */
+.tier-feature-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin: 1.2rem 0; }
+.tier-feature-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.95rem; color: var(--muted); line-height: 1.5; }
+.tier-feature-list li::before { content: '◆'; color: var(--gold-dim); font-size: 0.5rem; margin-top: 0.5rem; flex-shrink: 0; }
+.secrets-bar { background: var(--surface); border-radius: 2px; height: 6px; margin: 1rem 0 0.4rem; overflow: hidden; }
+.secrets-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); border-radius: 2px; }
+.secrets-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted-2); display: flex; justify-content: space-between; }
+
+/* RUACH */
+.deed-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin: 2rem 0 3rem; }
+.deed-card { background: var(--charcoal); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; text-align: center; position: relative; overflow: hidden; transition: var(--transition); }
+.deed-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.deed-card.x1::before { background: var(--ruach-teal); }
+.deed-card.x2::before { background: var(--gold); }
+.deed-card.x3::before { background: var(--amber); }
+.deed-card:hover { transform: translateY(-4px); border-color: var(--border-light); }
+.deed-multiplier { font-family: var(--font-display); font-size: 3rem; font-weight: 700; margin-bottom: 0.5rem; }
+.deed-card.x1 .deed-multiplier { color: var(--ruach-glow); }
+.deed-card.x2 .deed-multiplier { color: var(--gold); }
+.deed-card.x3 .deed-multiplier { color: var(--amber); }
+.deed-type { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted-2); margin-bottom: 0.8rem; }
+.deed-desc { font-size: 0.95rem; color: var(--muted); line-height: 1.6; margin-bottom: 1rem; }
+.deed-example { background: var(--surface); border-radius: var(--radius); padding: 0.8rem; font-size: 0.85rem; color: var(--muted-2); font-style: italic; }
+.ruach-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; margin: 2rem 0; }
+.ruach-flow-step { text-align: center; }
+.ruach-flow-title { font-family: var(--font-display); font-size: 0.9rem; color: var(--white); margin-bottom: 0.3rem; }
+.ruach-flow-sub { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted-2); letter-spacing: 0.08em; }
+.ruach-flow-arrow { color: var(--gold-dim); font-size: 1.5rem; text-align: center; }
+.services-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 2rem 0; }
+.service-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; text-align: center; transition: var(--transition); }
+.service-card:hover { border-color: var(--ruach-teal); background: rgba(26, 158, 143, 0.05); }
+.service-name { font-family: var(--font-display); font-size: 0.95rem; color: var(--white); margin-bottom: 0.4rem; }
+.service-desc { font-size: 0.85rem; color: var(--muted); }
+.amm-box { background: var(--charcoal); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; margin: 2rem 0; position: relative; overflow: hidden; }
+.amm-box::before { content: 'AMM INTELLIGENCE'; position: absolute; top: 1rem; right: 1.5rem; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--muted-2); }
+.amm-split { display: flex; gap: 2rem; margin: 1.5rem 0; flex-wrap: wrap; }
+.amm-slice { flex: 1; min-width: 140px; text-align: center; }
+.amm-pct { font-family: var(--font-display); font-size: 2.2rem; font-weight: 700; display: block; }
+.amm-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted-2); letter-spacing: 0.12em; text-transform: uppercase; }
+.satellite-box { background: linear-gradient(135deg, rgba(26, 158, 143, 0.08), rgba(10, 11, 13, 0)); border: 1px dashed var(--ruach-teal); border-radius: var(--radius-lg); padding: 2rem; margin-top: 2rem; text-align: center; }
+.satellite-box .title { font-family: var(--font-display); font-size: 1.2rem; color: var(--ruach-glow); margin-bottom: 0.8rem; }
+.satellite-box .desc { font-size: 0.95rem; color: var(--muted); max-width: 600px; margin: 0 auto; }
+
+/* ============================================================
+   GALLERY ACCORDION — GitHub-style with landscape imagery
+   ============================================================ */
+.gallery-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.gallery-item { border-bottom: 1px solid var(--border); }
+.gallery-item:last-child { border-bottom: none; }
+.gallery-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.4rem 1.8rem;
+  background: var(--charcoal);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: left;
+  gap: 1rem;
+}
+.gallery-trigger:hover { background: var(--surface); }
+.gallery-trigger.open {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.gallery-trigger-left { display: flex; align-items: center; gap: 1.2rem; }
+.gallery-num { font-family: var(--font-mono); font-size: 0.65rem; color: var(--gold-dim); letter-spacing: 0.15em; min-width: 22px; }
+.gallery-trigger-title { font-family: var(--font-display); font-size: 1.05rem; color: var(--white); margin-bottom: 0.15rem; line-height: 1.2; }
+.gallery-trigger-sub { font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted-2); letter-spacing: 0.08em; text-transform: uppercase; }
+.gallery-trigger-right { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+.gallery-badge { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-dim); background: rgba(201, 168, 76, 0.08); border: 1px solid rgba(201, 168, 76, 0.2); padding: 3px 10px; border-radius: 20px; }
+.gallery-arrow { width: 18px; height: 18px; color: var(--gold); transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1); flex-shrink: 0; }
+.gallery-trigger.open .gallery-arrow { transform: rotate(180deg); }
+.gallery-panel { max-height: 0; overflow: hidden; transition: max-height 0.55s cubic-bezier(0.4, 0, 0.2, 1); background: var(--obsidian); }
+.gallery-panel.open { max-height: 700px; }
+.gallery-img-wrap { position: relative; width: 100%; overflow: hidden; }
+.gallery-img { width: 100%; height: 420px; object-fit: cover; display: block; transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1), filter 0.6s ease; filter: brightness(0.82) saturate(0.88); }
+.gallery-panel.open .gallery-img { transform: scale(1.02); filter: brightness(0.92) saturate(1.0); }
+.gallery-img-caption { position: absolute; bottom: 0; left: 0; right: 0; padding: 3rem 2rem 1.8rem; background: linear-gradient(to top, rgba(10,11,13,0.94) 0%, rgba(10,11,13,0.55) 55%, transparent 100%); }
+.gallery-caption-tag { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 0.5rem; }
+.gallery-caption-text { font-family: var(--font-body); font-size: 1rem; color: var(--cream); line-height: 1.65; max-width: 520px; margin: 0; }
+
+/* FOOTER */
+footer { background: var(--obsidian); border-top: 1px solid var(--border); padding: 3rem 0 2rem; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; margin-bottom: 3rem; }
+.footer-brand-name { font-family: var(--font-display); font-size: 1.1rem; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 0.8rem; }
+.footer-brand-desc { font-size: 0.9rem; color: var(--muted-2); line-height: 1.6; max-width: 300px; }
+.footer-col-title { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted-2); margin-bottom: 1rem; }
+.footer-links { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+.footer-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+.footer-links a:hover { color: var(--gold); }
+.footer-bottom { border-top: 1px solid var(--border); padding-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.footer-bottom-text { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted-2); letter-spacing: 0.1em; }
+
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+  .hero-visual { display: none; }
+  .tier-overview-grid { grid-template-columns: repeat(3, 1fr); }
+  .deed-cards { grid-template-columns: 1fr 1fr; }
+  .services-grid { grid-template-columns: repeat(2, 1fr); }
+  .ruach-flow { grid-template-columns: 1fr; }
+  .ruach-flow-arrow { transform: rotate(90deg); }
+  .feature-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  nav { padding: 0 1rem; }
+  .nav-links { display: none; }
+  .container { padding: 0 1rem; }
+  .hero-title { font-size: 2.4rem; }
+  .tier-overview-grid { grid-template-columns: repeat(2, 1fr); }
+  .deed-cards, .services-grid { grid-template-columns: 1fr; }
+  .feature-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .amm-split { flex-direction: column; }
+  .dex-announcement { grid-template-columns: 1fr; text-align: center; }
+  .gallery-trigger { padding: 1.1rem 1.2rem; }
+  .gallery-img { height: 260px; }
+  .gallery-badge { display: none; }
+  .gallery-trigger-title { font-size: 0.95rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#home" class="nav-logo">
+    <svg class="nav-logo-mark" viewBox="0 0 36 36" fill="none">
+      <path d="M6 18 C6 10 10 6 18 6 C26 6 30 10 30 18 C30 26 26 30 18 30 C10 30 6 26 6 18Z" stroke="#c9a84c" stroke-width="1" fill="none" opacity="0.6"/>
+      <path d="M6 18 Q12 8 18 18 Q24 28 30 18" stroke="#c9a84c" stroke-width="1.5" fill="none"/>
+      <path d="M6 18 Q12 28 18 18 Q24 8 30 18" stroke="#c9a84c" stroke-width="0.8" fill="none" opacity="0.5"/>
+    </svg>
+    <span class="nav-logo-text">ForeFathers DAO</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#home" class="active">Home</a></li>
+    <li><a href="#tiers">Tiers</a></li>
+    <li><a href="#ruach">Ruach</a></li>
+    <li><a href="#gallery">Gallery</a></li>
+    <li><a href="#platform">Platform</a></li>
+    <li><a href="#technology">Technology</a></li>
+    <li><a href="#join" class="btn nav-cta">Join Now</a></li>
+  </ul>
+  <div class="dex-live-badge">
+    <span class="pulse"></span>
+    XRPL Permissioned DEX Live
+  </div>
+</nav>
+
+<!-- HOME -->
+<section id="home" class="hero-section">
+  <div class="hero-grid-bg"></div>
+  <div class="container" style="position:relative; z-index:2;">
+    <div class="dex-announcement">
+      <span style="font-family:var(--font-mono);font-size:1.4rem;color:var(--gold);">▦</span>
+      <div>
+        <div class="dex-announcement-title">XRPL Permissioned DEX — Now Live</div>
+        <div class="dex-announcement-text">Activated 10:58 UTC · February 18, 2026 · Ledger-enforced constitutional trading now operational</div>
+      </div>
+      <a href="#technology" class="btn btn-teal" style="white-space:nowrap;">View Stack</a>
+    </div>
+    <div class="hero-eyebrow">Constitutional Platform Infrastructure</div>
+    <h1 class="hero-title">Where <span class="accent">Good Deeds</span><br>Build Sovereign<br>Futures</h1>
+    <p class="hero-subtitle">ForeFathers DAO is the world's first constitutionally governed IP licensing platform — where dignity, community, and technology converge on the XRP Ledger.</p>
+    <div class="hero-actions">
+      <a href="#tiers" class="btn btn-gold">Explore Membership</a>
+      <a href="#ruach" class="btn btn-outline">What is Ruach?</a>
+    </div>
+    <div class="hero-metrics">
+      <div class="hero-metric"><span class="hero-metric-value">303</span><span class="hero-metric-label">Trade Secrets</span></div>
+      <div class="hero-metric"><span class="hero-metric-value">10+2</span><span class="hero-metric-label">Systems &amp; Methods</span></div>
+      <div class="hero-metric"><span class="hero-metric-value">$6B</span><span class="hero-metric-label">Projected Annual Capture</span></div>
+      <div class="hero-metric"><span class="hero-metric-value">2.86M</span><span class="hero-metric-label">Connectivity Recipients</span></div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <svg class="hero-lemniscate" viewBox="0 0 480 480" fill="none">
+      <path d="M240 240 C240 180 280 140 320 160 C360 180 380 220 360 260 C340 300 300 310 260 290 C220 270 200 230 220 200 C240 170 280 170 300 190 C320 210 320 240 300 250 C280 260 260 250 250 235" stroke="#c9a84c" stroke-width="1.5" fill="none" opacity="0.8"/>
+      <path d="M240 240 C240 300 200 340 160 320 C120 300 100 260 120 220 C140 180 180 170 220 190 C260 210 280 250 260 280 C240 310 200 310 180 290 C160 270 160 240 180 230 C200 220 220 230 230 245" stroke="#c9a84c" stroke-width="1.5" fill="none" opacity="0.8"/>
+      <circle cx="240" cy="240" r="180" stroke="#c9a84c" stroke-width="0.5" opacity="0.15" stroke-dasharray="4 8"/>
+    </svg>
+  </div>
+</section>
+
+<!-- CONNECTIVITY -->
+<div style="background: var(--deep-navy); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 2.5rem 0;">
+  <div class="container">
+    <div class="connectivity-banner">
+      <div>
+        <div class="connectivity-banner-text">
+          <strong>Universal Connectivity is a RIGHT, not a feature.</strong><br>
+          Every ForeFathers member receives free platform communications — funded by AMM burn capture from La'azar Protocol. No monthly fee. No exceptions.
+        </div>
+      </div>
+      <a href="#ruach" class="btn btn-teal">How It Works</a>
+    </div>
+    <div class="ticker-wrap">
+      <div class="ticker">
+        <span class="ticker-item">XRPL Permissioned DEX <span>LIVE</span></span>
+        <span class="ticker-item">La'azar Burn Protocol <span>ACTIVE</span></span>
+        <span class="ticker-item">303 Trade Secrets <span>PROTECTED</span></span>
+        <span class="ticker-item">10 Systems · 2 Methods <span>PROTECTED</span></span>
+        <span class="ticker-item">Universal Connectivity <span>FREE</span></span>
+        <span class="ticker-item">Ruach → Genesis → Exodus → Gabriel <span>PATH OPEN</span></span>
+        <span class="ticker-item">CRYSTALS-Kyber Quantum Security <span>MICHAEL+</span></span>
+        <span class="ticker-item">$625M Yr10 Projection <span>ARM MODEL</span></span>
+        <span class="ticker-item">XRPL Permissioned DEX <span>LIVE</span></span>
+        <span class="ticker-item">La'azar Burn Protocol <span>ACTIVE</span></span>
+        <span class="ticker-item">303 Trade Secrets <span>PROTECTED</span></span>
+        <span class="ticker-item">10 Systems · 2 Methods <span>PROTECTED</span></span>
+        <span class="ticker-item">Universal Connectivity <span>FREE</span></span>
+        <span class="ticker-item">Ruach → Genesis → Exodus → Gabriel <span>PATH OPEN</span></span>
+        <span class="ticker-item">CRYSTALS-Kyber Quantum Security <span>MICHAEL+</span></span>
+        <span class="ticker-item">$625M Yr10 Projection <span>ARM MODEL</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURE OVERVIEW -->
+<div style="background: var(--deep-navy); padding: 5rem 0;">
+  <div class="container">
+    <div class="section-label">Platform Overview</div>
+    <h2 style="font-size:2.2rem; margin-bottom:0.8rem;">Built for the Next Century of Commerce</h2>
+    <p style="color:var(--muted); max-width:600px; margin-bottom:3rem;">A constitutional AI platform where every transaction, identity, and trade secret is governed by the XRP Ledger — not by corporations.</p>
+    <div class="feature-grid">
+      <div class="feature-cell">
+        <span style="font-family:var(--font-mono);font-size:1rem;color:var(--gold);display:block;margin-bottom:1rem;">◈</span>
+        <div class="feature-title">Constitutional Governance</div>
+        <div class="feature-desc">Möbius topology enforcement. 1 person = 1 vote. No whale manipulation. Ledger-enforced, not code-enforced.</div>
+      </div>
+      <div class="feature-cell">
+        <span style="font-family:var(--font-mono);font-size:1rem;color:var(--gold);display:block;margin-bottom:1rem;">◉</span>
+        <div class="feature-title">Ruach Dignity Economy</div>
+        <div class="feature-desc">Good deeds earn tokens. Tokens burn for real services. Humans judge behavior — never algorithms. No punishment system exists.</div>
+      </div>
+      <div class="feature-cell">
+        <span style="font-family:var(--font-mono);font-size:1rem;color:var(--gold);display:block;margin-bottom:1rem;">∞</span>
+        <div class="feature-title">La'azar Burn Protocol</div>
+        <div class="feature-desc">Every NFT burn triggers atomic EscrowFinish → Payment → Redistribution. 75% to creator. 25% to platform. AMM-calculated liquidity contribution.</div>
+      </div>
+      <div class="feature-cell">
+        <span style="font-family:var(--font-mono);font-size:1rem;color:var(--gold);display:block;margin-bottom:1rem;">△</span>
+        <div class="feature-title">Sovereign Identity System</div>
+        <div class="feature-desc">W3C DIDs on XRPL NFTs. AES-256 encrypted IPFS storage. $0.00004/verification vs $2-3 for Stripe Identity. No third-party dependency.</div>
+      </div>
+      <div class="feature-cell">
+        <span style="font-family:var(--font-mono);font-size:1rem;color:var(--gold);display:block;margin-bottom:1rem;">◆</span>
+        <div class="feature-title">IP Licensing Stack</div>
+        <div class="feature-desc">ARM Holdings model. Licensees build on our full IP stack, develop their own innovations, and keep 75% of royalties for 20 years.</div>
+      </div>
+      <div class="feature-cell">
+        <span style="font-family:var(--font-mono);font-size:1rem;color:var(--gold);display:block;margin-bottom:1rem;">◇</span>
+        <div class="feature-title">Universal Connectivity</div>
+        <div class="feature-desc">Free communications for all members. Funded by La'azar burn capture and AMM liquidity. Roadmap: satellite constellation for global reach.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TIERS -->
+<section id="tiers" style="background:var(--deep-navy);">
+  <div class="container">
+    <div class="section-label">Membership Structure</div>
+    <h2 style="font-size:2.5rem; margin-bottom:0.5rem;">Six Rings of Access</h2>
+    <p style="color:var(--muted); max-width:560px; margin-bottom:2.5rem;">From earned dignity to enterprise sovereignty. Every ring unlocks a deeper layer of the constitutional platform. The entire path from Ruach to Gabriel is bootstrappable — no money required.</p>
+
+    <div class="tier-overview-grid">
+      <a class="tier-pill" href="#tier-ruach-dd" onclick="openDropdown('tier-ruach-dd')"><span class="tier-pill-name">Ruach</span><span class="tier-pill-price">Earned Free</span></a>
+      <a class="tier-pill" href="#tier-genesis-dd" onclick="openDropdown('tier-genesis-dd')"><span class="tier-pill-name">Genesis</span><span class="tier-pill-price">$100 or 1K Ruach</span></a>
+      <a class="tier-pill" href="#tier-exodus-dd" onclick="openDropdown('tier-exodus-dd')"><span class="tier-pill-name">Exodus</span><span class="tier-pill-price">$1,000</span></a>
+      <a class="tier-pill" href="#tier-gabriel-dd" onclick="openDropdown('tier-gabriel-dd')"><span class="tier-pill-name">Gabriel</span><span class="tier-pill-price">$25K + $5K/yr</span></a>
+      <a class="tier-pill" href="#tier-michael-dd" onclick="openDropdown('tier-michael-dd')"><span class="tier-pill-name">Michael</span><span class="tier-pill-price">$50K + $10K/yr</span></a>
+      <a class="tier-pill" href="#tier-raphael-dd" onclick="openDropdown('tier-raphael-dd')"><span class="tier-pill-name">Raphael</span><span class="tier-pill-price">$100K+ + $20K/yr</span></a>
+    </div>
+
+    <div style="margin: 2rem 0;">
+      <div class="section-label" style="font-size:0.65rem;">The Bootstrappable Path</div>
+      <div class="tier-path">
+        <div class="tier-path-step"><div class="tier-path-node" style="border-color:var(--ruach-glow);background:rgba(26,158,143,0.1);"></div><div class="tier-path-label">Ruach<br>Good Deeds</div></div>
+        <div class="tier-path-connector"></div>
+        <div class="tier-path-step"><div class="tier-path-node" style="border-color:#6abf7a;background:rgba(74,138,90,0.1);"></div><div class="tier-path-label">Genesis<br>1,000 Ruach</div></div>
+        <div class="tier-path-connector"></div>
+        <div class="tier-path-step"><div class="tier-path-node" style="border-color:#e08050;background:rgba(184,90,32,0.1);"></div><div class="tier-path-label">Exodus<br>$1,000</div></div>
+        <div class="tier-path-connector"></div>
+        <div class="tier-path-step"><div class="tier-path-node" style="border-color:#60aaee;background:rgba(42,106,170,0.1);"></div><div class="tier-path-label">Gabriel<br>$25K+</div></div>
+        <div class="tier-path-connector"></div>
+        <div class="tier-path-step"><div class="tier-path-node" style="border-color:#9070ee;background:rgba(74,42,170,0.1);"></div><div class="tier-path-label">Michael<br>$50K+</div></div>
+        <div class="tier-path-connector"></div>
+        <div class="tier-path-step"><div class="tier-path-node" style="border-color:#e060a0;background:rgba(138,42,90,0.1);"></div><div class="tier-path-label">Raphael<br>$100K+</div></div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:2rem;">
+
+      <div class="dropdown-group" id="tier-ruach-dd">
+        <button class="dropdown-trigger" onclick="toggleDropdown(this)">
+          <span style="display:flex;align-items:center;gap:12px;"><span style="font-family:var(--font-mono);font-size:0.9rem;color:var(--gold-dim);">◈</span><span>Ruach — Dignity Token Tier</span><span class="badge badge-teal" style="margin-left:0.5rem;">Free · Earned</span></span>
+          <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="dropdown-body">
+          <div class="dropdown-inner">
+            <div class="grid-2">
+              <div>
+                <p style="color:var(--muted); margin-bottom:1rem; font-size:0.95rem;">Ruach ("spirit" in Hebrew) tokens are earned through verified acts of community good. Bad behavior is judged exclusively by <strong style="color:var(--white);">humans</strong> — never by algorithms. The system only rewards; it never punishes.</p>
+                <ul class="tier-feature-list">
+                  <li>1,000 Ruach tokens = Genesis tier access (zero cost)</li>
+                  <li>Burns unlock food, shelter, hot showers, hotel access via permissioned NFTs</li>
+                  <li>Universal platform communications included</li>
+                  <li>3-tier deed multiplier system (1x / 2x / 3x)</li>
+                  <li>AMM auto-routes burn proceeds to liquidity pool</li>
+                  <li>Vendors earn on every Ruach burn</li>
+                </ul>
+              </div>
+              <div>
+                <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+                  <div class="stat-box"><span class="stat-value" style="color:var(--ruach-glow);">1,000</span><span class="stat-label">Deeds to Genesis</span></div>
+                  <div class="stat-box"><span class="stat-value" style="color:var(--ruach-glow);">3×</span><span class="stat-label">Max Multiplier</span></div>
+                  <div class="stat-box"><span class="stat-value" style="color:var(--ruach-glow);">4</span><span class="stat-label">Service Types</span></div>
+                  <div class="stat-box"><span class="stat-value" style="color:var(--ruach-glow);">∞</span><span class="stat-label">Communications</span></div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:1.5rem;"><a href="#ruach" class="btn btn-teal">Explore Ruach Economy →</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropdown-group" id="tier-genesis-dd">
+        <button class="dropdown-trigger" onclick="toggleDropdown(this)">
+          <span style="display:flex;align-items:center;gap:12px;"><span style="font-family:var(--font-mono);font-size:0.9rem;color:var(--gold-dim);">◇</span><span>Genesis — Individual Tier</span><span class="badge badge-sage" style="margin-left:0.5rem;">$100 · Publicly Visible</span></span>
+          <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="dropdown-body">
+          <div class="dropdown-inner">
+            <div class="grid-2">
+              <div>
+                <ul class="tier-feature-list">
+                  <li>45 trade secrets unlocked on the XRPL ledger</li>
+                  <li>Individual IP licensing rights</li>
+                  <li>Identity verification cost: $0.00004/verification</li>
+                  <li>Universal platform communications</li>
+                  <li>XRPL PermissionedDomain access — ledger-enforced</li>
+                  <li>No Web3 wallet required to onboard</li>
+                </ul>
+                <div style="margin-top:1.5rem;">
+                  <div class="secrets-bar"><div class="secrets-fill" style="width:15%;"></div></div>
+                  <div class="secrets-label"><span>45 secrets</span><span>of 303 total</span></div>
+                </div>
+              </div>
+              <div>
+                <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+                  <div class="stat-box"><span class="stat-value" style="color:#6abf7a;">$100</span><span class="stat-label">Entry Price</span></div>
+                  <div class="stat-box"><span class="stat-value" style="color:#6abf7a;">45</span><span class="stat-label">Trade Secrets</span></div>
+                  <div class="stat-box" style="grid-column:span 2;"><span class="stat-value" style="color:#6abf7a;font-size:1.3rem;">$0.00004</span><span class="stat-label">Per Identity Verification</span></div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:1.5rem; display:flex; gap:1rem; flex-wrap:wrap;">
+              <a href="#join" class="btn btn-gold">Join at Genesis</a>
+              <a href="#join" class="btn btn-outline">Upgrade with Ruach</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropdown-group" id="tier-exodus-dd">
+        <button class="dropdown-trigger" onclick="toggleDropdown(this)">
+          <span style="display:flex;align-items:center;gap:12px;"><span style="font-family:var(--font-mono);font-size:0.9rem;color:var(--gold-dim);">◆</span><span>Exodus — Small Business Tier</span><span class="badge badge-ember" style="margin-left:0.5rem;">$1,000 · FMA Eligible</span></span>
+          <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="dropdown-body">
+          <div class="dropdown-inner">
+            <div class="grid-2">
+              <div>
+                <ul class="tier-feature-list">
+                  <li>180 trade secrets unlocked (includes all Genesis secrets)</li>
+                  <li>FMA eligibility — earn 2% revenue share on every referred NFT sale</li>
+                  <li>Advanced OCR document verification</li>
+                  <li>Biometric spoof detection (H.2, H.5)</li>
+                  <li>ISO20022 financial messaging integration (D.1)</li>
+                  <li>La'azar perpetual cycle parameters (LA.4)</li>
+                </ul>
+                <div style="margin-top:1.5rem;">
+                  <div class="secrets-bar"><div class="secrets-fill" style="width:60%;"></div></div>
+                  <div class="secrets-label"><span>180 secrets</span><span>of 303 total</span></div>
+                </div>
+              </div>
+              <div>
+                <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+                  <div class="stat-box"><span class="stat-value" style="color:#e08050;">$1K</span><span class="stat-label">Entry Price</span></div>
+                  <div class="stat-box"><span class="stat-value" style="color:#e08050;">180</span><span class="stat-label">Trade Secrets</span></div>
+                  <div class="stat-box"><span class="stat-value" style="color:#e08050;">2%</span><span class="stat-label">FMA Revenue Share</span></div>
+                  <div class="stat-box"><span class="stat-value" style="color:#e08050;">∞</span><span class="stat-label">Referral Potential</span></div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:1.5rem; display:flex; gap:1rem; flex-wrap:wrap;">
+              <a href="#join" class="btn btn-gold">Join at Exodus</a>
+              <a href="#join" class="btn btn-outline">Become an FMA</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropdown-group" id="tier-gabriel-dd">
+        <button class="dropdown-trigger" onclick="toggleDropdown(this)">
+          <span style="display:flex;align-items:center;gap:12px;"><span style="font-family:var(--font-mono);font-size:0.9rem;color:var(--gold-dim);">◆</span><span>Gabriel — Foundation Platform</span><span class="badge badge-sky" style="margin-left:0.5rem;">$25K + $5K/yr · Web3 Required</span></span>
+          <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="dropdown-body">
+          <div class="dropdown-inner">
+            <div class="grid-2">
+              <div>
+                <ul class="tier-feature-list">
+                  <li>Full IP systems &amp; methods stack access</li>
+                  <li>Gabriel Constitutional AI Agent — XRPL-only crawler</li>
+                  <li>25% platform royalty on all derivative innovations</li>
+                  <li>Build your own innovations — keep 75% for 20 years</li>
+                  <li>XRPL Permissioned DEX constitutional trading access</li>
+                </ul>
+              </div>
+              <div>
+                <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+                  <div class="stat-box"><span class="stat-value" style="color:#60aaee;">75%</span><span class="stat-label">Yours for 20 Years</span></div>
+                  <div class="stat-box"><span class="stat-value" style="color:#60aaee;">$625M</span><span class="stat-label">Yr10 Platform Proj.</span></div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:1.5rem;"><a href="#join" class="btn btn-gold">Apply for Gabriel</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropdown-group" id="tier-michael-dd">
+        <button class="dropdown-trigger" onclick="toggleDropdown(this)">
+          <span style="display:flex;align-items:center;gap:12px;"><span style="font-family:var(--font-mono);font-size:0.9rem;color:var(--gold-dim);">◆</span><span>Michael — Multi-Chain Security</span><span class="badge badge-violet" style="margin-left:0.5rem;">$50K + $10K/yr · Quantum-Resistant</span></span>
+          <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="dropdown-body">
+          <div class="dropdown-inner">
+            <div class="grid-2">
+              <div>
+                <p style="color:var(--muted);font-size:0.95rem;margin-bottom:1rem;">Everything in Gabriel, plus:</p>
+                <ul class="tier-feature-list">
+                  <li>Michael Constitutional AI Agent — XRPL + Hedera + Flare + Zebec</li>
+                  <li>CRYSTALS-Kyber post-quantum cryptography (FIPS 203)</li>
+                  <li>Multi-node threat detection across 4 chains</li>
+                  <li>Axelar cross-chain XRPL↔Solana bridge coordination</li>
+                  <li>Geographic compliance data feeds by jurisdiction</li>
+                </ul>
+              </div>
+              <div>
+                <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+                  <div class="stat-box"><span class="stat-value" style="color:#9070ee;">4</span><span class="stat-label">Chains</span></div>
+                  <div class="stat-box"><span class="stat-value" style="color:#9070ee;">KYBER</span><span class="stat-label">Post-Quantum</span></div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:1.5rem;"><a href="#join" class="btn btn-gold">Apply for Michael</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropdown-group" id="tier-raphael-dd">
+        <button class="dropdown-trigger" onclick="toggleDropdown(this)">
+          <span style="display:flex;align-items:center;gap:12px;"><span style="font-family:var(--font-mono);font-size:0.9rem;color:var(--gold-dim);">◆</span><span>Raphael — Complete Continuity</span><span class="badge badge-rose" style="margin-left:0.5rem;">$100K+ + $20K/yr · Multi-Generational</span></span>
+          <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="dropdown-body">
+          <div class="dropdown-inner">
+            <div class="grid-2">
+              <div>
+                <p style="color:var(--muted);font-size:0.95rem;margin-bottom:1rem;">Everything in Michael, plus:</p>
+                <ul class="tier-feature-list">
+                  <li>5-level crisis management decision system</li>
+                  <li>Multi-generational succession protocols — XRPL-anchored</li>
+                  <li>DNA substrate data encoding (R.1) — 180-day access</li>
+                  <li>Institutional bank/legal/regulatory feeds</li>
+                  <li>Disaster recovery site coordination and automatic failover</li>
+                </ul>
+              </div>
+              <div>
+                <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+                  <div class="stat-box"><span class="stat-value" style="color:#e060a0;">5</span><span class="stat-label">Crisis Levels</span></div>
+                  <div class="stat-box"><span class="stat-value" style="color:#e060a0;">∞</span><span class="stat-label">Generations</span></div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:1.5rem;"><a href="#join" class="btn btn-gold">Apply for Raphael</a></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="divider"></div>
+    <div style="background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(212,136,42,0.05));border:1px solid var(--gold-dim);border-radius:var(--radius-lg);padding:2rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem;">
+        <div>
+          <div class="section-label" style="font-size:0.6rem;">Limited — First 1,000</div>
+          <h3 style="font-size:1.4rem;margin-bottom:0.5rem;">⭐ Early Adopter NFT — $5,000</h3>
+          <p style="color:var(--muted);font-size:0.95rem;max-width:500px;">50% off all Archangel tiers forever. 2% referral revenue share on every NFT you introduce to the platform. Founding member status locked in perpetually on the XRPL ledger.</p>
+        </div>
+        <a href="#join" class="btn btn-gold" style="white-space:nowrap;">Secure Early Adopter NFT</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RUACH -->
+<section id="ruach" style="background:radial-gradient(ellipse at 0% 100%, rgba(26,158,143,0.06) 0%, transparent 50%), var(--obsidian);">
+  <div class="container">
+    <div style="text-align:center;max-width:700px;margin:0 auto 4rem;">
+      <div class="section-label" style="justify-content:center;">Dignity Economy</div>
+      <h2 style="font-size:2.5rem;margin-bottom:1rem;">The Ruach Protocol</h2>
+      <p style="color:var(--muted);font-size:1.1rem;">Ruach ("רוּחַ" — spirit, breath, wind) tokens are earned through verified good deeds. They burn to unlock real-world services. Bad behavior is judged by humans only. The system only rewards; it never punishes.</p>
+    </div>
+
+    <div class="section-label">Deed Confirmation Tiers</div>
+    <div class="deed-cards">
+      <div class="deed-card x1">
+        <div class="deed-type">Individual Good Deed</div>
+        <div class="deed-multiplier">×1</div>
+        <div class="deed-desc">A personal act of service confirmed by the recipient. The recipient directly submits confirmation — distributing Ruach to the contributor.</div>
+        <div class="deed-example">Example: Helping a neighbor carry groceries. They confirm → you receive 10 Ruach.</div>
+      </div>
+      <div class="deed-card x2">
+        <div class="deed-type">Community Service</div>
+        <div class="deed-multiplier">×2</div>
+        <div class="deed-desc">Organized community benefit confirmed by a designated community validator. Double Ruach award for broader impact.</div>
+        <div class="deed-example">Example: Organizing a neighborhood clean-up. Validator confirms → you receive 20 Ruach.</div>
+      </div>
+      <div class="deed-card x3">
+        <div class="deed-type">Institutional Impact</div>
+        <div class="deed-multiplier">×3</div>
+        <div class="deed-desc">Large-scale institutional contribution verified through an institutional validator. Maximum Ruach award for maximum impact.</div>
+        <div class="deed-example">Example: Coordinating disaster relief for 500 families → you receive 300 Ruach.</div>
+      </div>
+    </div>
+
+    <div class="section-label">The Ruach Ecosystem</div>
+    <div class="ruach-flow">
+      <div class="ruach-flow-step"><div class="ruach-flow-title">Good Deed</div><div class="ruach-flow-sub">Performed &<br>Confirmed by Humans</div></div>
+      <div class="ruach-flow-arrow">→</div>
+      <div class="ruach-flow-step"><div class="ruach-flow-title">Ruach Issued</div><div class="ruach-flow-sub">×1, ×2, or ×3<br>multiplier applied</div></div>
+      <div class="ruach-flow-arrow">→</div>
+      <div class="ruach-flow-step"><div class="ruach-flow-title">NFT Burn</div><div class="ruach-flow-sub">Permissioned NFT<br>burned for service</div></div>
+      <div class="ruach-flow-arrow">→</div>
+      <div class="ruach-flow-step"><div class="ruach-flow-title">AMM Pool</div><div class="ruach-flow-sub">Smart % routed<br>to liquidity pool</div></div>
+    </div>
+
+    <div class="section-label" style="margin-top:3rem;">Ruach-Unlockable Services</div>
+    <div class="services-grid">
+      <div class="service-card"><div class="service-name">Food Access</div><div class="service-desc">Permissioned NFT grants access at participating vendor locations</div></div>
+      <div class="service-card"><div class="service-name">Shelter</div><div class="service-desc">Emergency and transitional housing access via burn verification</div></div>
+      <div class="service-card"><div class="service-name">Hot Showers</div><div class="service-desc">Hygiene facility access at partner sites — dignity restored</div></div>
+      <div class="service-card"><div class="service-name">Hotel Access</div><div class="service-desc">Short-term accommodation via participating hotel network partners</div></div>
+    </div>
+
+    <div class="section-label" style="margin-top:3rem;">Burn Economics &amp; AMM Intelligence</div>
+    <div class="amm-box">
+      <div class="grid-2" style="gap:2rem;">
+        <div>
+          <h3 style="font-size:1.2rem;margin-bottom:1rem;color:var(--gold);">La'azar NFT Burn Split</h3>
+          <div class="amm-split">
+            <div class="amm-slice"><span class="amm-pct" style="color:#6abf7a;">75%</span><span class="amm-label">To IP Creator</span></div>
+            <div class="amm-slice"><span class="amm-pct" style="color:var(--gold);">25%</span><span class="amm-label">Platform Share</span></div>
+          </div>
+          <p style="font-size:0.88rem;color:var(--muted-2);">The platform absorbs connectivity costs from its 25% share — funding universal communications for all members.</p>
+        </div>
+        <div>
+          <h3 style="font-size:1.2rem;margin-bottom:1rem;color:var(--gold);">POS Micro-Burn Split (1% Captured)</h3>
+          <div class="amm-split">
+            <div class="amm-slice"><span class="amm-pct" style="color:var(--ruach-glow);">50%</span><span class="amm-label">Community Fund</span></div>
+            <div class="amm-slice"><span class="amm-pct" style="color:var(--amber);">25%</span><span class="amm-label">Merchant Loyalty</span></div>
+            <div class="amm-slice"><span class="amm-pct" style="color:#9070ee;">25%</span><span class="amm-label">Humanitarian</span></div>
+          </div>
+          <p style="font-size:0.88rem;color:var(--muted-2);">At scale: 100,000 merchants × $50K/month × 1% = <strong style="color:var(--white);">$6B/year captured</strong> — funding 2.86 million people.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     GALLERY SECTION — The World We Build For
+     GitHub-style accordion dropdowns · Landscape photography
+     ============================================================ -->
+<section id="gallery" style="background:var(--obsidian); min-height:auto; padding:100px 0 80px;">
+  <div class="container">
+    <div class="section-label">Visual Landscape</div>
+    <h2 style="font-size:2.5rem; margin-bottom:0.5rem;">The World We Build For</h2>
+    <p style="color:var(--muted); max-width:580px; margin-bottom:3rem; font-size:1.05rem; line-height:1.8;">
+      ForeFathers DAO is not built for screens — it is built for the world beyond them. These landscapes remind us what sovereignty, dignity, and universal access truly mean.
+    </p>
+
+    <div class="gallery-accordion">
+
+      <!-- 01 -->
+      <div class="gallery-item">
+        <button class="gallery-trigger" onclick="toggleGallery(this)">
+          <div class="gallery-trigger-left">
+            <span class="gallery-num">01</span>
+            <div>
+              <div class="gallery-trigger-title">Lower Yellowstone Falls</div>
+              <div class="gallery-trigger-sub">Yellowstone National Park · Wyoming, USA</div>
+            </div>
+          </div>
+          <div class="gallery-trigger-right">
+            <span class="gallery-badge">Waterfall</span>
+            <svg class="gallery-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </button>
+        <div class="gallery-panel">
+          <div class="gallery-img-wrap">
+            <img src="https://images.pexels.com/photos/31350302/pexels-photo-31350302/free-photo-of-majestic-view-of-lower-yellowstone-falls.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Lower Yellowstone Falls cascading into a canyon" class="gallery-img" loading="lazy"/>
+            <div class="gallery-img-caption">
+              <span class="gallery-caption-tag">Universal Access</span>
+              <p class="gallery-caption-text">Power exists in nature and in people. Constitutional infrastructure ensures neither is gated.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 02 -->
+      <div class="gallery-item">
+        <button class="gallery-trigger" onclick="toggleGallery(this)">
+          <div class="gallery-trigger-left">
+            <span class="gallery-num">02</span>
+            <div>
+              <div class="gallery-trigger-title">Alpine Solitude</div>
+              <div class="gallery-trigger-sub">Mountain Wilderness · High Elevation</div>
+            </div>
+          </div>
+          <div class="gallery-trigger-right">
+            <span class="gallery-badge">Wilderness</span>
+            <svg class="gallery-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </button>
+        <div class="gallery-panel">
+          <div class="gallery-img-wrap">
+            <img src="https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Mountain reflected in still alpine lake" class="gallery-img" loading="lazy"/>
+            <div class="gallery-img-caption">
+              <span class="gallery-caption-tag">Sovereign Futures</span>
+              <p class="gallery-caption-text">The summit is not the destination — the path is. Every good deed is a step toward something greater.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03 -->
+      <div class="gallery-item">
+        <button class="gallery-trigger" onclick="toggleGallery(this)">
+          <div class="gallery-trigger-left">
+            <span class="gallery-num">03</span>
+            <div>
+              <div class="gallery-trigger-title">Aurora Borealis</div>
+              <div class="gallery-trigger-sub">Northern Lights · Arctic Circle</div>
+            </div>
+          </div>
+          <div class="gallery-trigger-right">
+            <span class="gallery-badge">Celestial</span>
+            <svg class="gallery-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </button>
+        <div class="gallery-panel">
+          <div class="gallery-img-wrap">
+            <img src="https://images.pexels.com/photos/1933239/pexels-photo-1933239.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Aurora borealis shimmering across a dark sky" class="gallery-img" loading="lazy"/>
+            <div class="gallery-img-caption">
+              <span class="gallery-caption-tag">Ruach Protocol</span>
+              <p class="gallery-caption-text">Spirit, breath, wind — רוּחַ. What moves unseen still shapes everything visible.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 04 -->
+      <div class="gallery-item">
+        <button class="gallery-trigger" onclick="toggleGallery(this)">
+          <div class="gallery-trigger-left">
+            <span class="gallery-num">04</span>
+            <div>
+              <div class="gallery-trigger-title">Antelope Canyon</div>
+              <div class="gallery-trigger-sub">Slot Canyon · Arizona, USA</div>
+            </div>
+          </div>
+          <div class="gallery-trigger-right">
+            <span class="gallery-badge">Desert</span>
+            <svg class="gallery-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </button>
+        <div class="gallery-panel">
+          <div class="gallery-img-wrap">
+            <img src="https://images.pexels.com/photos/33041/antelope-canyon-lower-canyon-arizona-nature.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Light beams piercing through Antelope Canyon sandstone" class="gallery-img" loading="lazy"/>
+            <div class="gallery-img-caption">
+              <span class="gallery-caption-tag">Möbius Topology</span>
+              <p class="gallery-caption-text">Light finds its way through any formation. Constitutional governance illuminates paths others overlook.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 05 -->
+      <div class="gallery-item">
+        <button class="gallery-trigger" onclick="toggleGallery(this)">
+          <div class="gallery-trigger-left">
+            <span class="gallery-num">05</span>
+            <div>
+              <div class="gallery-trigger-title">Open Ocean at Golden Hour</div>
+              <div class="gallery-trigger-sub">Pacific Horizon · Infinite Reach</div>
+            </div>
+          </div>
+          <div class="gallery-trigger-right">
+            <span class="gallery-badge">Ocean</span>
+            <svg class="gallery-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </button>
+        <div class="gallery-panel">
+          <div class="gallery-img-wrap">
+            <img src="https://images.pexels.com/photos/1001682/pexels-photo-1001682.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Ocean waves at golden hour horizon" class="gallery-img" loading="lazy"/>
+            <div class="gallery-img-caption">
+              <span class="gallery-caption-tag">Universal Connectivity</span>
+              <p class="gallery-caption-text">No wall. No edge. No exclusion. The horizon belongs to everyone — and so does the platform.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end gallery-accordion -->
+
+    <div style="margin-top:2rem;text-align:center;">
+      <p style="font-family:var(--font-mono);font-size:0.68rem;color:var(--muted-2);letter-spacing:0.1em;">Photos via Pexels · Free to use under the Pexels License</p>
+    </div>
+  </div>
+</section>
+
+<!-- PLATFORM -->
+<section id="platform" style="background:var(--deep-navy);">
+  <div class="container">
+    <div class="section-label">Enterprise Platform</div>
+    <h2 style="font-size:2.5rem;margin-bottom:0.5rem;">The Archangel Platform</h2>
+    <p style="color:var(--muted);max-width:600px;margin-bottom:3rem;">ForeFathers operates as a constitutional IP licensor — not a SaaS provider. Build derivative innovations on our full IP stack. Keep 75% of royalties for 20 years. We earn 25% platform royalty.</p>
+
+    <div class="grid-2" style="margin-bottom:3rem;">
+      <div class="card" style="background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(10,11,13,0));border-color:var(--gold-dim);">
+        <div style="font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.15em;color:var(--gold-dim);margin-bottom:1rem;">ARM HOLDINGS MODEL</div>
+        <h3 style="font-size:1.2rem;margin-bottom:0.8rem;">How Licensees Earn</h3>
+        <ul class="tier-feature-list">
+          <li>License the full IP stack from ForeFathers</li>
+          <li>Build your own derivative innovations on top</li>
+          <li>License your innovations to others in the ecosystem</li>
+          <li>Keep 75% of all royalties for 20 years</li>
+          <li>ForeFathers earns 25% platform royalty — passively, perpetually</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div style="font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.15em;color:var(--muted-2);margin-bottom:1rem;">YEAR 10 PROJECTION</div>
+        <div class="stat-grid">
+          <div class="stat-box"><span class="stat-value">2,500</span><span class="stat-label">Licensee Entities</span></div>
+          <div class="stat-box"><span class="stat-value">$250K</span><span class="stat-label">Avg Annual Royalties Each</span></div>
+          <div class="stat-box"><span class="stat-value">25%</span><span class="stat-label">Platform Royalty Rate</span></div>
+          <div class="stat-box"><span class="stat-value">$625M</span><span class="stat-label">Platform Royalties/Year</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dex-announcement" style="margin-bottom:0;">
+      <span style="font-family:var(--font-mono);font-size:1.4rem;color:var(--gold);">▦</span>
+      <div>
+        <div class="dex-announcement-title" style="font-size:1.2rem;">XRPL Permissioned DEX — Live as of 10:58 UTC · Feb 18, 2026</div>
+        <div class="dex-announcement-text">Constitutional trading now operational. Ledger-enforced access control. Möbius governance prevents whale manipulation. Gabriel+ tiers have access.</div>
+      </div>
+      <a href="#technology" class="btn btn-teal" style="white-space:nowrap;">Technical Details →</a>
+    </div>
+  </div>
+</section>
+
+<!-- TECHNOLOGY -->
+<section id="technology">
+  <div class="container">
+    <div class="section-label">The Stack</div>
+    <h2 style="font-size:2.5rem;margin-bottom:0.5rem;">Constitutional Technology</h2>
+    <p style="color:var(--muted);max-width:600px;margin-bottom:3rem;">10 systems. 2 methods. 303 trade secrets. 105 integration pathways. The architecture that makes ForeFathers impossible to replicate.</p>
+
+    <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:3rem;">
+      <div class="stat-box"><span class="stat-value">10</span><span class="stat-label">Systems</span></div>
+      <div class="stat-box"><span class="stat-value">2</span><span class="stat-label">Meta-Methods</span></div>
+      <div class="stat-box"><span class="stat-value">303</span><span class="stat-label">Trade Secrets</span></div>
+      <div class="stat-box"><span class="stat-value">105</span><span class="stat-label">Integration Pathways</span></div>
+      <div class="stat-box"><span class="stat-value">&lt;0.01%</span><span class="stat-label">Replication Probability</span></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+
+      <div class="dropdown-group">
+        <button class="dropdown-trigger" onclick="toggleDropdown(this)">
+          <span style="display:flex;align-items:center;gap:12px;"><span style="font-family:var(--font-mono);color:var(--gold-dim);">◉</span><span>La'azar Burn Protocol — Atomic Value Capture</span><span class="badge badge-gold">Constitutional · Active</span></span>
+          <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="dropdown-body">
+          <div class="dropdown-inner">
+            <p style="color:var(--muted);margin-bottom:1rem;">The La'azar Burn Protocol intercepts NFTokenBurn transactions via XRPL Hooks v3, executing an atomic 5-step sequence. All steps succeed or all fail — no partial states. If EscrowFinish fails, the burn is rejected entirely.</p>
+            <div style="display:flex;flex-direction:column;gap:0.3rem;">
+              <div style="display:flex;gap:10px;padding:0.6rem;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);"><span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--gold);background:rgba(201,168,76,0.1);padding:2px 6px;border-radius:2px;flex-shrink:0;">1</span><div><div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--white);">NFTokenBurn intercepted by Hook</div><div style="font-size:0.8rem;color:var(--muted-2);">Hook validates Möbius Constitutional rules</div></div></div>
+              <div style="display:flex;gap:10px;padding:0.6rem;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);"><span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--gold);background:rgba(201,168,76,0.1);padding:2px 6px;border-radius:2px;flex-shrink:0;">2</span><div><div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--white);">EscrowFinish emitted</div><div style="font-size:0.8rem;color:var(--muted-2);">Releases locked RLUSD/XRP value to Hook account</div></div></div>
+              <div style="display:flex;gap:10px;padding:0.6rem;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);"><span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--gold);background:rgba(201,168,76,0.1);padding:2px 6px;border-radius:2px;flex-shrink:0;">3</span><div><div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--white);">Payment (75%) emitted → IP Creator</div></div></div>
+              <div style="display:flex;gap:10px;padding:0.6rem;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);"><span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--gold);background:rgba(201,168,76,0.1);padding:2px 6px;border-radius:2px;flex-shrink:0;">4</span><div><div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--white);">Payment (25%) emitted → Platform (AMM % auto-routed)</div></div></div>
+              <div style="display:flex;gap:10px;padding:0.6rem;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);"><span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--gold);background:rgba(201,168,76,0.1);padding:2px 6px;border-radius:2px;flex-shrink:0;">5</span><div><div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--white);">NFTokenBurn authorized — token sent to XRPL black hole</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropdown-group">
+        <button class="dropdown-trigger" onclick="toggleDropdown(this)">
+          <span style="display:flex;align-items:center;gap:12px;"><span>∞</span><span>Möbius Constitutional Protocol</span><span class="badge badge-gold">1 Person = 1 Vote · No Whale Manipulation</span></span>
+          <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="dropdown-body">
+          <div class="dropdown-inner">
+            <div class="grid-2">
+              <div>
+                <p style="color:var(--muted);margin-bottom:1rem;">The Möbius Constitutional Protocol solves blockchain governance's fundamental problem: token-weighted plutocracy. More tokens do not mean more votes.</p>
+                <ul class="tier-feature-list">
+                  <li>1 wallet = 1 vote — democratic ledger governance</li>
+                  <li>Whales cannot manipulate proposals or parameters</li>
+                  <li>Constitutional rules enforced at XRPL protocol level</li>
+                  <li>Möbius topology — single continuous surface, no inside/outside</li>
+                  <li>Hedera HCS tamper-proof timestamps across all chains</li>
+                </ul>
+              </div>
+              <div>
+                <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div style="font-size:0.78rem;color:var(--muted-2);text-decoration:line-through;padding:0.4rem;background:var(--surface);border-radius:var(--radius);">Token-weighted → whale control</div><div style="font-size:0.78rem;color:#6abf7a;padding:0.4rem;background:rgba(74,138,90,0.1);border-radius:var(--radius);">✓ Wallet-based → democratic</div></div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div style="font-size:0.78rem;color:var(--muted-2);text-decoration:line-through;padding:0.4rem;background:var(--surface);border-radius:var(--radius);">Code-enforced (hackable)</div><div style="font-size:0.78rem;color:#6abf7a;padding:0.4rem;background:rgba(74,138,90,0.1);border-radius:var(--radius);">✓ Ledger-enforced (unhackable)</div></div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"><div style="font-size:0.78rem;color:var(--muted-2);text-decoration:line-through;padding:0.4rem;background:var(--surface);border-radius:var(--radius);">Centralized KYC dependency</div><div style="font-size:0.78rem;color:#6abf7a;padding:0.4rem;background:rgba(74,138,90,0.1);border-radius:var(--radius);">✓ Sovereign identity system</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dropdown-group">
+        <button class="dropdown-trigger" onclick="toggleDropdown(this)">
+          <span style="display:flex;align-items:center;gap:12px;"><span style="font-family:var(--font-mono);color:var(--gold-dim);">◆</span><span>Sovereign Identity Verification System</span><span class="badge badge-sky">$0.00004/verification · No Third-Party</span></span>
+          <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="dropdown-body">
+          <div class="dropdown-inner">
+            <div class="grid-2">
+              <div>
+                <ul class="tier-feature-list">
+                  <li>W3C DID on XRPL: did:xrpl:{issuer}:{nft_id}</li>
+                  <li>AES-256 Fernet encryption — PBKDF2 key derivation (100K iterations)</li>
+                  <li>IPFS distributed storage — censorship-resistant</li>
+                  <li>AI face recognition: 99.38% accuracy (LFW benchmark)</li>
+                  <li>Multi-modal liveness detection: &gt;95% TPR</li>
+                  <li>User PII never leaves organizational control</li>
+                </ul>
+              </div>
+              <div>
+                <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:0.7rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);"><span style="font-size:0.85rem;color:var(--muted);">Stripe Identity</span><span style="font-family:var(--font-mono);font-size:0.85rem;color:var(--muted-2);">$2.00–$3.00</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:0.7rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);"><span style="font-size:0.85rem;color:var(--muted);">Jumio / Onfido</span><span style="font-family:var(--font-mono);font-size:0.85rem;color:var(--muted-2);">$1.00–$2.50</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:0.7rem 1rem;background:rgba(74,138,90,0.1);border:1px solid var(--genesis-sage);border-radius:var(--radius);"><span style="font-size:0.85rem;color:var(--white);">ForeFathers</span><span style="font-family:var(--font-mono);font-size:0.85rem;color:#6abf7a;">$0.00004</span></div>
+                </div>
+                <div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--muted-2);text-align:center;margin-top:0.8rem;">&gt;4,700× cost reduction</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- JOIN -->
+<section id="join" style="background:var(--deep-navy);">
+  <div class="container">
+    <div class="section-label">Get Started</div>
+    <h2 style="font-size:2.5rem;margin-bottom:0.5rem;">Join ForeFathers DAO</h2>
+    <p style="color:var(--muted);max-width:580px;margin-bottom:3rem;">Five rings of onboarding. All identity anchored permanently on the XRPL ledger. Genesis and Exodus require no Web3 wallet. Archangel tiers require XUMM wallet verification.</p>
+
+    <div style="display:flex;flex-direction:column;gap:0;margin-bottom:3rem;">
+      <div style="display:flex;gap:1rem;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:44px;height:44px;border-radius:50%;background:var(--surface);border:2px solid var(--ruach-glow);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-mono);font-size:0.7rem;color:var(--ruach-glow);">I</div><div style="width:1px;flex:1;background:var(--border);min-height:24px;margin-top:4px;"></div></div>
+        <div style="padding:1rem;flex:1;background:var(--charcoal);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:0.5rem;"><div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.4rem;"><span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--ruach-glow);letter-spacing:0.15em;">RING 1</span><span style="font-family:var(--font-display);font-size:1rem;color:var(--white);">Identity Verification</span></div><p style="font-size:0.9rem;color:var(--muted);">Biometric verification. Identity anchored as an NFT on XRPL with ledger-enforced access control. GDPR compliant — you own your data.</p></div>
+      </div>
+      <div style="display:flex;gap:1rem;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:44px;height:44px;border-radius:50%;background:var(--surface);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-mono);font-size:0.7rem;color:var(--gold);">II</div><div style="width:1px;flex:1;background:var(--border);min-height:24px;margin-top:4px;"></div></div>
+        <div style="padding:1rem;flex:1;background:var(--charcoal);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:0.5rem;"><div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.4rem;"><span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--gold);letter-spacing:0.15em;">RING 2</span><span style="font-family:var(--font-display);font-size:1rem;color:var(--white);">NDA Signature</span></div><p style="font-size:0.9rem;color:var(--muted);">Sign the ForeFathers DAO NDA. Signature stored permanently on the ledger. Immutable and verifiable.</p></div>
+      </div>
+      <div style="display:flex;gap:1rem;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:44px;height:44px;border-radius:50%;background:var(--surface);border:2px solid var(--amber);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-mono);font-size:0.7rem;color:var(--amber);">III</div><div style="width:1px;flex:1;background:var(--border);min-height:24px;margin-top:4px;"></div></div>
+        <div style="padding:1rem;flex:1;background:var(--charcoal);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:0.5rem;"><div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.4rem;"><span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--amber);letter-spacing:0.15em;">RING 3</span><span style="font-family:var(--font-display);font-size:1rem;color:var(--white);">Payment or Ruach Conversion</span></div><p style="font-size:0.9rem;color:var(--muted);">Pay your tier price in RLUSD, or convert 1,000 Ruach tokens for Genesis. Archangel tiers require XUMM Web3 wallet signing.</p></div>
+      </div>
+      <div style="display:flex;gap:1rem;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:44px;height:44px;border-radius:50%;background:var(--surface);border:2px solid #9070ee;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-mono);font-size:0.7rem;color:#9070ee;">IV</div><div style="width:1px;flex:1;background:var(--border);min-height:24px;margin-top:4px;"></div></div>
+        <div style="padding:1rem;flex:1;background:var(--charcoal);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:0.5rem;"><div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.4rem;"><span style="font-family:var(--font-mono);font-size:0.65rem;color:#9070ee;letter-spacing:0.15em;">RING 4</span><span style="font-family:var(--font-display);font-size:1rem;color:var(--white);">Founder Multi-Sig Approval</span></div><p style="font-size:0.9rem;color:var(--muted);">Founders verify your Ring 1-3 completion on the ledger and mint your license NFT. Archangel tiers: 2 founder signatures required.</p></div>
+      </div>
+      <div style="display:flex;gap:1rem;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:44px;height:44px;border-radius:50%;background:var(--surface);border:2px solid #e060a0;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-mono);font-size:0.7rem;color:#e060a0;">V</div></div>
+        <div style="padding:1rem;flex:1;background:var(--charcoal);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:0.5rem;"><div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.4rem;"><span style="font-family:var(--font-mono);font-size:0.65rem;color:#e060a0;letter-spacing:0.15em;">RING 5</span><span style="font-family:var(--font-display);font-size:1rem;color:var(--white);">Trade Secret Access Grant</span></div><p style="font-size:0.9rem;color:var(--muted);">License NFT minted. Trade secrets granted on XRPL PermissionedDomain — ledger-enforced, not code-enforced. Access is permanent and auditable.</p></div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="gap:2rem;">
+      <div>
+        <div class="section-label" style="font-size:0.6rem;margin-bottom:1rem;">Public Tiers — No Web3 Required</div>
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <div class="card" style="background:rgba(74,138,90,0.08);border-color:var(--genesis-sage);">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;"><div><div style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:0.2rem;">Genesis</div><div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--gold);">$100 RLUSD — or — 1,000 Ruach</div></div><span class="badge badge-sage">45 Secrets</span></div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;font-family:var(--font-mono);font-size:0.72rem;color:var(--muted);margin-bottom:1rem;">Send 100 RLUSD to: <span style="color:var(--gold);">rForeFathersDAO...</span><br>Memo: <span style="color:var(--gold);">PAYMENT:GENESIS:{your_discord_id}</span></div>
+            <a href="https://discord.gg/forefathers" class="btn btn-gold" style="width:100%;justify-content:center;">Open Discord → /join-genesis</a>
+          </div>
+          <div class="card" style="background:rgba(184,90,32,0.08);border-color:var(--exodus-ember);">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;"><div><div style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:0.2rem;">Exodus</div><div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--gold);">$1,000 RLUSD · FMA Eligible</div></div><span class="badge badge-ember">180 Secrets</span></div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;font-family:var(--font-mono);font-size:0.72rem;color:var(--muted);margin-bottom:1rem;">Send 1,000 RLUSD to: <span style="color:var(--gold);">rForeFathersDAO...</span><br>Memo: <span style="color:var(--gold);">PAYMENT:EXODUS:{your_discord_id}</span></div>
+            <a href="https://discord.gg/forefathers" class="btn btn-gold" style="width:100%;justify-content:center;">Open Discord → /join-exodus</a>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-label" style="font-size:0.6rem;margin-bottom:1rem;">Enterprise &amp; Special — Web3 Required</div>
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <div class="card" style="background:linear-gradient(135deg,rgba(42,106,170,0.1),rgba(74,42,170,0.05));border-color:var(--gabriel-sky);">
+            <div style="font-family:var(--font-display);font-size:1rem;margin-bottom:0.5rem;">Gabriel · Michael · Raphael</div>
+            <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem;">Archangel tiers require XUMM Web3 wallet connection. All payments verified on ledger before access is granted.</p>
+            <a href="https://discord.gg/forefathers" class="btn btn-gold" style="width:100%;justify-content:center;margin-bottom:0.5rem;">Open Discord → /join-archangel</a>
+          </div>
+          <div class="card" style="background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(10,11,13,0));border-color:var(--gold);">
+            <div style="font-family:var(--font-display);font-size:1rem;color:var(--gold);margin-bottom:0.5rem;">⭐ Early Adopter NFT — $5,000</div>
+            <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem;">50% off all Archangel tiers forever. 2% referral revenue share. Founding member status. First 1,000 only.</p>
+            <a href="https://discord.gg/forefathers" class="btn btn-gold" style="width:100%;justify-content:center;">Open Discord → /early-adopter</a>
+          </div>
+          <div class="card" style="background:rgba(26,158,143,0.08);border-color:var(--ruach-teal);">
+            <div style="font-family:var(--font-display);font-size:1rem;color:var(--ruach-glow);margin-bottom:0.5rem;">Start with Ruach — Free</div>
+            <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1rem;">Earn good deed tokens and bootstrap your way to Genesis — entirely free. No money required. Just community service.</p>
+            <a href="https://discord.gg/forefathers" class="btn btn-teal" style="width:100%;justify-content:center;">Join Discord → /ruach-balance</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand-name">ForeFathers DAO</div>
+        <div class="footer-brand-desc">Constitutional platform infrastructure for the next century of commerce. Built on XRPL. Governed by Möbius topology. Powered by good deeds.</div>
+        <div style="margin-top:1.5rem;display:flex;align-items:center;gap:8px;">
+          <span class="pulse" style="display:inline-block;width:6px;height:6px;background:var(--ruach-glow);border-radius:50%;animation:pulse 2s infinite;"></span>
+          <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--ruach-glow);">XRPL Permissioned DEX Live · Feb 18, 2026</span>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Platform</div>
+        <ul class="footer-links">
+          <li><a href="#home">Home</a></li>
+          <li><a href="#tiers">Membership Tiers</a></li>
+          <li><a href="#ruach">Ruach Economy</a></li>
+          <li><a href="#gallery">Gallery</a></li>
+          <li><a href="#platform">Archangel Platform</a></li>
+          <li><a href="#technology">Technology</a></li>
+          <li><a href="#join">Join Now</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Technology</div>
+        <ul class="footer-links">
+          <li><a href="#technology">La'azar Burn Protocol</a></li>
+          <li><a href="#technology">IP Stack</a></li>
+          <li><a href="#technology">Möbius Governance</a></li>
+          <li><a href="#technology">XRPL Permissioned DEX</a></li>
+          <li><a href="#technology">Sovereign Identity</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Community</div>
+        <ul class="footer-links">
+          <li><a href="https://discord.gg/forefathers">Discord</a></li>
+          <li><a href="https://github.com/forefathers-dao">GitHub</a></li>
+          <li><a href="#join">FMA Program</a></li>
+          <li><a href="#join">Early Adopter NFT</a></li>
+          <li><a href="#ruach">Earn Ruach</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-bottom-text">© 2026 ForeFathers DAO LLC · All Rights Reserved · 10 Systems · 2 Methods · 303 Trade Secrets · 105 Pathways</div>
+      <div class="footer-bottom-text" style="text-align:right;">Built on XRPL · Governed by Möbius Constitutional Protocol</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+// DROPDOWN ACCORDION
+function toggleDropdown(trigger) {
+  const body = trigger.nextElementSibling;
+  const isOpen = trigger.classList.contains('open');
+  const parent = trigger.closest('div[style*="flex-direction"], section, div.dropdown-group')?.parentElement;
+  if (parent) {
+    parent.querySelectorAll('.dropdown-trigger.open').forEach(t => {
+      if (t !== trigger) {
+        t.classList.remove('open');
+        t.nextElementSibling.classList.remove('open');
+      }
+    });
+  }
+  trigger.classList.toggle('open', !isOpen);
+  body.classList.toggle('open', !isOpen);
+}
+
+function openDropdown(id) {
+  const group = document.getElementById(id);
+  if (!group) return;
+  const trigger = group.querySelector('.dropdown-trigger');
+  const body    = group.querySelector('.dropdown-body');
+  if (trigger && body) {
+    trigger.classList.add('open');
+    body.classList.add('open');
+    setTimeout(() => group.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }
+}
+
+// GALLERY ACCORDION — one open at a time
+function toggleGallery(trigger) {
+  const panel = trigger.nextElementSibling;
+  const isOpen = trigger.classList.contains('open');
+
+  // Close all gallery panels
+  document.querySelectorAll('.gallery-trigger.open').forEach(t => {
+    if (t !== trigger) {
+      t.classList.remove('open');
+      t.nextElementSibling.classList.remove('open');
+    }
+  });
+
+  trigger.classList.toggle('open', !isOpen);
+  panel.classList.toggle('open', !isOpen);
+}
+
+// NAV ACTIVE STATE
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-links a[href^="#"]');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+      });
+    }
+  });
+}, { threshold: 0.3 });
+sections.forEach(s => observer.observe(s));
+
+// SMOOTH SCROLL
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+});
+</script>
+
+</body>
+</html>
