@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ForeFathers DAO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=JetBrains+Mono:wght@300;400&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --obsidian:#0a0b0d;--navy:#0d1117;--surface:#1a2030;--border:#2a3650;
+  --gold:#c9a84c;--gold-bright:#e8c56a;--gold-dim:#8a6e30;--amber:#d4882a;
+  --white:#f8f4ed;--muted:#8a9ab8;--muted-2:#5a6a85;
+  --teal:#1a9e8f;--teal-glow:#22d4bf;--sage:#4a8a5a;
+  --sky:#2a6aaa;--violet:#4a2aaa;--rose:#8a2a5a;
+  --D:'Cinzel',serif;--B:'Cormorant Garamond',serif;--M:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--obsidian);color:var(--white)}
+
+/* NAV */
+#nav{position:fixed;top:0;left:0;right:0;height:56px;z-index:800;background:rgba(10,11,13,.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(42,54,80,.5);display:flex;align-items:center;justify-content:space-between;padding:0 2rem}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo-text{font-family:var(--D);font-size:.82rem;letter-spacing:.18em;color:var(--gold);text-transform:uppercase}
+.nav-pages{display:flex;align-items:center}
+.nav-btn{font-family:var(--M);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2);background:none;border:none;border-bottom:2px solid transparent;padding:0 .85rem;height:56px;cursor:pointer;transition:color .2s,border-color .2s;white-space:nowrap}
+.nav-btn:hover{color:var(--gold)}
+.nav-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.nav-right{display:flex;align-items:center;gap:8px}
+.live-badge{display:flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;background:rgba(26,158,143,.12);border:1px solid var(--teal);font-family:var(--M);font-size:.55rem;color:var(--teal-glow);letter-spacing:.1em;text-transform:uppercase}
+.live-dot{width:6px;height:6px;background:var(--teal-glow);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* TRACK */
+#track{display:flex;width:700vw;height:100vh;transition:transform .72s cubic-bezier(.77,0,.175,1);will-change:transform}
+.slide{position:relative;width:100vw;height:100vh;flex-shrink:0;overflow:hidden}
+
+/* BACKGROUND — photo dominant */
+.slide-bg{position:absolute;inset:0;background-size:cover;background-position:center;transform:scale(1.06);filter:brightness(.42) saturate(.85);transition:transform 1.4s cubic-bezier(.25,.46,.45,.94),filter 1.2s ease}
+.slide.active .slide-bg{transform:scale(1);filter:brightness(.62) saturate(1)}
+.slide-overlay{position:absolute;inset:0;background:linear-gradient(105deg,rgba(10,11,13,.68) 0%,rgba(10,11,13,.28) 55%,rgba(10,11,13,.04) 100%)}
+
+/* CONTENT — bottom left, minimal footprint */
+.slide-content{position:absolute;bottom:0;left:0;z-index:2;padding:0 5vw 6.5rem 5vw;max-width:500px}
+.slide-title{font-family:var(--D);font-size:clamp(2.5rem,4.8vw,4.2rem);font-weight:600;line-height:1.04;letter-spacing:-.01em;color:var(--white);margin-bottom:1.8rem}
+.slide-title .accent{color:var(--gold)}
+
+/* TICKER */
+.ticker-wrap{overflow:hidden;background:rgba(10,11,13,.55);padding:.32rem 0;border-top:1px solid rgba(42,54,80,.4);border-bottom:1px solid rgba(42,54,80,.4);margin-bottom:1.4rem}
+.ticker{display:flex;gap:2.5rem;animation:tick 30s linear infinite;white-space:nowrap}
+.ticker-item{font-family:var(--M);font-size:.52rem;letter-spacing:.1em;color:var(--muted-2);text-transform:uppercase}
+.ticker-item span{color:var(--gold)}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ONE-WORD MENU */
+.menu-stack{display:flex;flex-direction:column;gap:0}
+.menu-btn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:.52rem 0;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;transition:border-color .2s,transform .15s;gap:10px}
+.menu-btn:hover{border-bottom-color:rgba(201,168,76,.3);transform:translateX(3px)}
+.menu-btn.open{border-bottom-color:rgba(201,168,76,.4);transform:none}
+.menu-word{font-family:var(--D);font-size:1.1rem;letter-spacing:.08em;color:rgba(248,244,237,.72);transition:color .2s}
+.menu-btn:hover .menu-word,.menu-btn.open .menu-word{color:var(--gold-bright)}
+.menu-arrow{width:13px;height:13px;flex-shrink:0;color:rgba(201,168,76,.3);transition:transform .3s,color .2s}
+.menu-btn:hover .menu-arrow{color:rgba(201,168,76,.55)}
+.menu-btn.open .menu-arrow{transform:rotate(180deg);color:var(--gold)}
+
+/* DROPDOWN */
+.menu-panel{max-height:0;overflow:hidden;transition:max-height .36s cubic-bezier(.4,0,.2,1);border-left:1px solid rgba(201,168,76,.1)}
+.menu-panel.open{max-height:380px}
+.mpi{padding:.65rem 0 .65rem 1rem}
+.panel-list{list-style:none;display:flex;flex-direction:column;gap:.32rem;margin-bottom:.65rem}
+.panel-list li{font-family:var(--B);font-size:.88rem;color:rgba(248,244,237,.6);line-height:1.5;padding-left:.75rem;position:relative}
+.panel-list li::before{content:'—';position:absolute;left:0;color:var(--gold-dim);font-size:.65rem;top:.18rem}
+
+/* BUTTONS */
+.pa{display:inline-flex;align-items:center;gap:5px;padding:.42rem 1rem;border-radius:3px;font-family:var(--M);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;font-weight:500;cursor:pointer;border:none;transition:all .2s;margin-top:.25rem}
+.pa-gold{background:var(--gold);color:var(--obsidian)}.pa-gold:hover{background:var(--gold-bright)}
+.pa-teal{background:var(--teal);color:var(--obsidian)}.pa-teal:hover{background:var(--teal-glow)}
+.pa-outline{background:transparent;color:var(--gold);border:1px solid var(--gold-dim)}.pa-outline:hover{background:rgba(201,168,76,.08);border-color:var(--gold)}
+
+/* STAT ROW */
+.prow{display:flex;gap:.55rem;margin-bottom:.6rem;flex-wrap:wrap}
+.pstat{flex:1;min-width:60px;background:rgba(26,32,48,.65);border:1px solid var(--border);border-radius:4px;padding:.55rem .4rem;text-align:center}
+.pstat-v{font-family:var(--D);font-size:1.15rem;color:var(--gold);display:block}
+.pstat-l{font-family:var(--M);font-size:.48rem;color:var(--muted-2);letter-spacing:.08em;text-transform:uppercase}
+
+/* PHOTO CREDIT */
+.photo-credit{position:absolute;bottom:1.5rem;right:1.8rem;z-index:3;text-align:right}
+.photo-credit span{font-family:var(--M);font-size:.48rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(248,244,237,.28);display:block}
+.photo-credit strong{font-family:var(--D);font-size:.88rem;color:rgba(248,244,237,.45);display:block}
+
+/* ARROWS + DOTS */
+.sarrow{position:fixed;top:50%;transform:translateY(-50%);z-index:700;width:40px;height:40px;border-radius:50%;border:1px solid rgba(42,54,80,.55);background:rgba(10,11,13,.5);backdrop-filter:blur(8px);color:var(--gold-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.sarrow:hover{border-color:var(--gold);color:var(--gold)}
+.sarrow.hidden{opacity:0;pointer-events:none}
+.sarrow svg{width:15px;height:15px}
+#arrow-prev{left:.8rem}
+#arrow-next{right:.8rem}
+#slide-dots{position:fixed;bottom:1.3rem;left:50%;transform:translateX(-50%);z-index:700;display:flex;gap:7px;align-items:center}
+.sdot{width:6px;height:6px;border-radius:50%;cursor:pointer;background:rgba(201,168,76,.18);border:1px solid rgba(201,168,76,.12);transition:all .3s}
+.sdot.active{width:22px;border-radius:3px;background:var(--gold);border-color:var(--gold)}
+#slide-counter{position:fixed;bottom:1.2rem;right:1.6rem;z-index:700;font-family:var(--M);font-size:.52rem;color:rgba(201,168,76,.32);letter-spacing:.1em}
+
+/* AVATAR */
+.tier-tabs{display:flex;gap:.28rem;flex-wrap:wrap;margin-bottom:.85rem;align-items:center}
+.tier-divider{font-family:var(--M);font-size:.42rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2);padding:0 .32rem;opacity:.38;border-left:1px solid rgba(255,255,255,.07);border-right:1px solid rgba(255,255,255,.07)}
+.tier-tab{font-family:var(--M);font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;padding:.28rem .65rem;border-radius:3px;border:1px solid rgba(255,255,255,.07);background:transparent;color:var(--muted-2);cursor:pointer;transition:all .2s;white-space:nowrap}
+.tier-tab:hover{border-color:rgba(201,168,76,.28);color:var(--muted)}
+.tier-tab.t-active{border-color:transparent;font-weight:600}
+.tier-tab[data-t="ruach"].t-active{background:rgba(58,90,58,.55);color:#8abf8a;border:1px solid rgba(74,138,90,.28)}
+.tier-tab[data-t="genesis"].t-active{background:linear-gradient(120deg,#0d2a4a,#8a6a20);color:#f0e8a0;border:none}
+.tier-tab[data-t="nefesh"].t-active{background:#1a4a7a;color:#90c8ff}
+.tier-tab[data-t="neshamah"].t-active{background:#8a6a20;color:#f0d870}
+.tier-tab[data-t="chayah"].t-active{background:#6a1a3a;color:#f0b0d0}
+.tier-tab[data-t="yechidah"].t-active{background:linear-gradient(120deg,#8a6a20,#4a2a9a);color:#fff}
+
+.avatar-panel{display:none}
+.avatar-panel.av-visible{display:grid;grid-template-columns:150px 1fr;gap:.9rem;animation:avfade .3s ease}
+@keyframes avfade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+.av-left{display:flex;flex-direction:column;align-items:center;gap:.5rem}
+.av-orb{width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.9rem;cursor:pointer;transition:transform .3s;position:relative}
+.av-orb:hover{transform:scale(1.06)}
+.av-orb::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:1px solid rgba(255,255,255,.09);animation:spin 8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.orb-ruach   {background:radial-gradient(circle at 30% 30%,#5a8a5a,#1a2a1a);box-shadow:0 0 14px rgba(74,138,90,.28)}
+.orb-genesis {background:radial-gradient(circle at 25% 25%,#f0e060,#1a3a6a,#050810);box-shadow:0 0 30px rgba(201,168,76,.48),0 0 55px rgba(26,58,106,.28)}
+.orb-nefesh  {background:radial-gradient(circle at 30% 30%,#60aaee,#0a2a5a);box-shadow:0 0 20px rgba(42,106,170,.48)}
+.orb-neshamah{background:radial-gradient(circle at 30% 30%,#f0d070,#6a4a10);box-shadow:0 0 24px rgba(201,168,76,.48)}
+.orb-chayah  {background:radial-gradient(circle at 30% 30%,#f070b0,#4a0a30);box-shadow:0 0 24px rgba(138,42,90,.52)}
+.orb-yechidah{background:radial-gradient(circle at 30% 30%,#c0b0ff,#1a0a6a);box-shadow:0 0 28px rgba(100,80,220,.62),0 0 50px rgba(201,168,76,.16)}
+
+.av-tier-name{font-family:var(--D);font-size:.92rem;letter-spacing:.08em;color:var(--white);text-align:center}
+.av-class-tag{font-family:var(--M);font-size:.48rem;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-2);text-align:center;line-height:1.5}
+.av-mca{font-family:var(--M);font-size:.46rem;letter-spacing:.09em;text-transform:uppercase;padding:.18rem .45rem;border-radius:2px;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.2);color:var(--gold-dim);text-align:center}
+.earn-path{display:flex;align-items:center;gap:.28rem;flex-wrap:wrap;margin:.08rem 0 .35rem}
+.earn-step{font-family:var(--M);font-size:.45rem;letter-spacing:.06em;text-transform:uppercase;padding:.14rem .38rem;border-radius:2px;white-space:nowrap}
+.earn-arrow{color:var(--gold-dim);font-size:.58rem}
+
+.av-right{display:flex;flex-direction:column;gap:.5rem}
+.av-section{font-family:var(--M);font-size:.48rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:.18rem}
+
+.stat-list{display:flex;flex-direction:column;gap:.3rem}
+.stat-row{display:grid;grid-template-columns:78px 1fr 24px;align-items:center;gap:.42rem}
+.stat-name{font-family:var(--M);font-size:.52rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2)}
+.stat-bar-wrap{height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden}
+.stat-bar{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.stat-val{font-family:var(--M);font-size:.52rem;color:var(--muted-2);text-align:right}
+.bar-gold  {background:linear-gradient(90deg,var(--gold-dim),var(--gold))}
+.bar-teal  {background:linear-gradient(90deg,#0d6b60,var(--teal-glow))}
+.bar-violet{background:linear-gradient(90deg,#2a1a6a,#9070ee)}
+.bar-rose  {background:linear-gradient(90deg,#4a0a30,#e060a0)}
+.bar-sage  {background:linear-gradient(90deg,#1a3a22,#6abf7a)}
+.bar-sky   {background:linear-gradient(90deg,#0a1a3a,#60aaee)}
+.bar-amber {background:linear-gradient(90deg,#5a3010,var(--amber))}
+
+.chips{display:flex;flex-wrap:wrap;gap:.22rem;margin-top:.12rem}
+.chip{font-family:var(--M);font-size:.44rem;letter-spacing:.06em;text-transform:uppercase;padding:.15rem .4rem;border-radius:2px;border:1px solid;background:transparent;white-space:nowrap}
+.cg{border-color:rgba(74,138,90,.38);color:#6abf7a}
+.cb{border-color:rgba(42,106,170,.38);color:#60aaee}
+.co{border-color:rgba(201,168,76,.38);color:var(--gold)}
+.cr{border-color:rgba(138,42,90,.38);color:#e060a0}
+.cv{border-color:rgba(100,80,220,.38);color:#b0a0ff}
+.cx{border-color:rgba(138,70,70,.32);color:#b07070}
+
+.av-cta{display:flex;align-items:center;gap:.45rem;margin-top:.38rem;padding-top:.5rem;border-top:1px solid rgba(255,255,255,.04)}
+.av-cta-text{font-family:var(--B);font-size:.78rem;color:rgba(248,244,237,.38);flex:1;line-height:1.4}
+
+/* MOBILE */
+@media(max-width:768px){
+  .slide-content{padding:0 1.4rem 5.5rem;max-width:100%}
+  .slide-title{font-size:clamp(2rem,7.5vw,3rem)}
+  .nav-pages{display:none}
+  .photo-credit{display:none}
+  #slide-counter{display:none}
+  .avatar-panel.av-visible{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-logo">
+    <svg width="26" height="26" viewBox="0 0 36 36" fill="none">
+      <path d="M6 18C6 10 10 6 18 6s12 4 12 12-4 12-12 12S6 26 6 18Z" stroke="#c9a84c" stroke-width="1" fill="none" opacity=".6"/>
+      <path d="M6 18Q12 8 18 18Q24 28 30 18" stroke="#c9a84c" stroke-width="1.5" fill="none"/>
+      <path d="M6 18Q12 28 18 18Q24 8 30 18" stroke="#c9a84c" stroke-width=".8" fill="none" opacity=".5"/>
+    </svg>
+    <span class="nav-logo-text">ForeFathers DAO</span>
+  </a>
+  <div class="nav-pages">
+    <button class="nav-btn active" onclick="goTo(0)">Home</button>
+    <button class="nav-btn" onclick="goTo(1)">Membership</button>
+    <button class="nav-btn" onclick="goTo(2)">Ruach</button>
+    <button class="nav-btn" onclick="goTo(3)">Platform</button>
+    <button class="nav-btn" onclick="goTo(4)">Join</button>
+    <button class="nav-btn" onclick="goTo(5)">Accord</button>
+    <button class="nav-btn" onclick="goTo(6)">Avatar</button>
+  </div>
+  <div class="nav-right">
+    <div class="live-badge"><span class="live-dot"></span>XRPL Live</div>
+  </div>
+</nav>
+
+<!-- ARROWS -->
+<button class="sarrow hidden" id="arrow-prev" onclick="goTo(cur-1)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+</button>
+<button class="sarrow" id="arrow-next" onclick="goTo(cur+1)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+</button>
+
+<!-- DOTS -->
+<div id="slide-dots">
+  <div class="sdot active" onclick="goTo(0)"></div>
+  <div class="sdot" onclick="goTo(1)"></div>
+  <div class="sdot" onclick="goTo(2)"></div>
+  <div class="sdot" onclick="goTo(3)"></div>
+  <div class="sdot" onclick="goTo(4)"></div>
+  <div class="sdot" onclick="goTo(5)"></div>
+  <div class="sdot" onclick="goTo(6)"></div>
+</div>
+<div id="slide-counter">1 / 7</div>
+
+<div id="track">
+
+<!-- SLIDE 1 — HOME -->
+<div class="slide active" data-i="0">
+  <div class="slide-bg" style="background-image:url('https://media.istockphoto.com/id/1392793652/photo/devils-tower-lit-up-amongst-a-dark-cloudy-sky.jpg?b=1&s=612x612&w=0&k=20&c=yK3ann53s1uE3Y8tZN7mLCbs1fehe-Vwd9_pnmZ08UA=')"></div>
+  <div class="slide-overlay"></div>
+  <div class="slide-content">
+    <div class="ticker-wrap">
+      <div class="ticker">
+        <span class="ticker-item">XRPL DEX <span>LIVE</span></span>
+        <span class="ticker-item">La'azar Burn <span>ACTIVE</span></span>
+        <span class="ticker-item">303 Trade Secrets <span>PROTECTED</span></span>
+        <span class="ticker-item">Universal Connectivity <span>FREE</span></span>
+        <span class="ticker-item">CRYSTALS-Kyber <span>QUANTUM</span></span>
+        <span class="ticker-item">$625M Yr10 <span>ARM MODEL</span></span>
+        <span class="ticker-item">XRPL DEX <span>LIVE</span></span>
+        <span class="ticker-item">La'azar Burn <span>ACTIVE</span></span>
+        <span class="ticker-item">303 Trade Secrets <span>PROTECTED</span></span>
+        <span class="ticker-item">Universal Connectivity <span>FREE</span></span>
+        <span class="ticker-item">CRYSTALS-Kyber <span>QUANTUM</span></span>
+        <span class="ticker-item">$625M Yr10 <span>ARM MODEL</span></span>
+      </div>
+    </div>
+    <h1 class="slide-title">Where <span class="accent">Good Deeds</span><br>Build Sovereign<br>Futures</h1>
+    <div class="menu-stack">
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Platform</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <div class="prow">
+            <div class="pstat"><span class="pstat-v">303</span><span class="pstat-l">Secrets</span></div>
+            <div class="pstat"><span class="pstat-v">$6B</span><span class="pstat-l">Capture</span></div>
+            <div class="pstat"><span class="pstat-v">2.86M</span><span class="pstat-l">Funded</span></div>
+          </div>
+          <a href="platform.html" class="pa pa-gold">Explore →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">DEX</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>Live Feb 18, 2026 · 3–5 second finality</li>
+            <li>RLUSD and XRP pairs · Constitutional trading</li>
+          </ul>
+          <a href="dex.html" class="pa pa-teal">Trade →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="goTo(1)">
+          <span class="menu-word">Members</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="photo-credit"><span>Wyoming, USA</span><strong>Devils Tower</strong></div>
+</div>
+
+<!-- SLIDE 2 — MEMBERSHIP -->
+<div class="slide" data-i="1">
+  <div class="slide-bg" style="background-image:url('https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg?auto=compress&cs=tinysrgb&w=1600&dpr=2')"></div>
+  <div class="slide-overlay"></div>
+  <div class="slide-content">
+    <h2 class="slide-title">Six Rings<br>of <span class="accent">Access</span></h2>
+    <div class="menu-stack">
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Ruach</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>Earned through good deeds · 1,000 Ruach = Genesis</li>
+            <li>Tokens offset phone bills · Not yet in the system</li>
+          </ul>
+          <a href="ruach.html" class="pa pa-outline">Learn →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Genesis</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>$100 RLUSD or 1,000 Ruach · Individual only</li>
+            <li>45 trade secrets · Sovereign XRPL identity</li>
+          </ul>
+          <a href="genesis.html" class="pa pa-gold">Join →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Exodus</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>$1,000 · 180 trade secrets · FMA eligible</li>
+            <li>2% referral revenue forever</li>
+          </ul>
+          <a href="exodus.html" class="pa pa-gold">Join →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Archangel</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>Gabriel $25K · Michael $50K · Raphael $100K+</li>
+            <li>Full 303 secrets · Business entity required</li>
+          </ul>
+          <a href="archangel.html" class="pa pa-gold">Apply →</a>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <div class="photo-credit"><span>Pacific Northwest</span><strong>Emerald Forest</strong></div>
+</div>
+
+<!-- SLIDE 3 — RUACH -->
+<div class="slide" data-i="2">
+  <div class="slide-bg" style="background-image:url('https://media.istockphoto.com/id/1091154734/photo/patterns-in-nature-dark-waves-and-water.jpg?b=1&s=612x612&w=0&k=20&c=B427p1iBeBDpEmTm3NuzMf5NdJ9ueHYGn0uDoGMTD1s=');background-position:center center"></div>
+  <div class="slide-overlay"></div>
+  <div class="slide-content">
+    <h2 class="slide-title">Earn Your<br><span class="accent">Way In</span></h2>
+    <div class="menu-stack">
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Deeds</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>1×, 2×, or 3× multiplier · Judged by humans only</li>
+            <li>No algorithm punishment · Ever</li>
+          </ul>
+          <a href="deeds.html" class="pa pa-teal">How It Works →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Burns</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>Tokens unlock food, shelter, hotel access</li>
+            <li>1,000 Ruach = Genesis at zero cost</li>
+          </ul>
+          <a href="burns.html" class="pa pa-outline">Redeem →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Balance</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list"><li>Discord → /ruach-balance</li></ul>
+          <a href="https://discord.gg/forefathers" class="pa pa-teal">Open Discord →</a>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <div class="photo-credit"><span>Arctic Circle</span><strong>Aurora Borealis</strong></div>
+</div>
+
+<!-- SLIDE 4 — PLATFORM -->
+<div class="slide" data-i="3">
+  <div class="slide-bg" style="background-image:url('https://media.istockphoto.com/id/181857318/photo/st-michael-statue-castle.jpg?b=1&s=612x612&w=0&k=20&c=S6fYoO3r6xq4FATPeVGdNHSmkSeUAzRCVcUtD_TX03s=')"></div>
+  <div class="slide-overlay"></div>
+  <div class="slide-content">
+    <h2 class="slide-title">The Archangel<br><span class="accent">Platform</span></h2>
+    <div class="menu-stack">
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">La'azar</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>75% creator · 25% platform · Atomic on XRPL</li>
+            <li>NFT burned → escrow released → payment guaranteed</li>
+          </ul>
+          <a href="laazar.html" class="pa pa-gold">Protocol →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Möbius</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>1 wallet = 1 vote · Ledger-enforced</li>
+            <li>No whale control · No override possible</li>
+          </ul>
+          <a href="mobius.html" class="pa pa-outline">Governance →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Identity</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>W3C DIDs on XRPL · $0.00004 per verification</li>
+            <li>4,700× cheaper · You own your data</li>
+          </ul>
+          <a href="identity.html" class="pa pa-teal">Verify →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Licensing</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>ARM model · 75% royalties yours · 20 years</li>
+            <li>303 secrets · 105 integration pathways</li>
+          </ul>
+          <a href="licensing.html" class="pa pa-gold">License →</a>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <div class="photo-credit"><span>Möbius Topology</span><strong>Antelope Canyon</strong></div>
+</div>
+
+<!-- SLIDE 5 — JOIN -->
+<div class="slide" data-i="4">
+  <div class="slide-bg" style="background-image:url('https://images.pexels.com/photos/36717/amazing-animal-beautiful-beautifull.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')"></div>
+  <div class="slide-overlay"></div>
+  <div class="slide-content">
+    <h2 class="slide-title">Join<br><span class="accent">ForeFathers</span></h2>
+    <div class="menu-stack">
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Onboarding</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>Identity · NDA · Payment · Multi-sig · Access Grant</li>
+            <li>Genesis and Exodus need no Web3 wallet</li>
+          </ul>
+          <a href="onboarding.html" class="pa pa-gold">Start →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Free</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list"><li>Earn 1,000 Ruach → Genesis at zero cost</li></ul>
+          <a href="https://discord.gg/forefathers" class="pa pa-teal">Discord → /ruach-balance</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Genesis</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list"><li>$100 RLUSD · Memo: PAYMENT:GENESIS:{discord_id}</li></ul>
+          <a href="https://discord.gg/forefathers" class="pa pa-gold">Discord → /join-genesis</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Archangel</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>Gabriel $25K · Michael $50K · Raphael $100K+</li>
+            <li>2 founder signatures · XUMM required</li>
+          </ul>
+          <a href="https://discord.gg/forefathers" class="pa pa-gold">Discord → /join-archangel</a>
+        </div></div>
+      </div>
+    </div>
+  </div>
+  <div class="photo-credit"><span>Pacific Horizon</span><strong>Golden Hour</strong></div>
+</div>
+
+<!-- SLIDE 6 — ACCORD -->
+<div class="slide" data-i="5">
+  <div class="slide-bg" style="background-image:url('https://images.pexels.com/photos/1089438/pexels-photo-1089438.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')"></div>
+  <div class="slide-overlay" style="background:linear-gradient(105deg,rgba(10,11,13,.85) 0%,rgba(10,11,13,.45) 58%,rgba(10,11,13,.08) 100%)"></div>
+  <div class="slide-content">
+    <h2 class="slide-title">One <span class="accent">Law.</span><br>Four Powers.<br>Zero Override.</h2>
+    <div class="menu-stack">
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Powers</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>ForeFathers DAO LLC — Constitutional Governance</li>
+            <li>Central Consolidation LLC — Treasury &amp; Insurance</li>
+            <li>Accumulated Allocations LLC — IP Escrow</li>
+            <li>Digital Protocol LLC — Operations &amp; Intelligence</li>
+          </ul>
+          <a href="accord.html" class="pa pa-outline">Full Accord →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Patents</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>12 patents · GOV / SEC / DATA / OPS / FIN layers</li>
+            <li>Patent #3 · Root hash 585008741 · XRPL anchored</li>
+          </ul>
+          <a href="patents.html" class="pa pa-gold">View Stack →</a>
+        </div></div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-btn" onclick="toggleMenu(this)">
+          <span class="menu-word">Immutability</span>
+          <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="menu-panel"><div class="mpi">
+          <ul class="panel-list">
+            <li>No admin key · No rollback · No central authority</li>
+            <li>ISO 20022 compliance auto-generated every transaction</li>
+          </ul>
+          <a href="xrpl.html" class="pa pa-teal">XRPL Proof →</a>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7 — AVATAR -->
+<div class="slide" data-i="6">
+  <div class="slide-bg" style="background-image:url('https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')"></div>
+  <div class="slide-overlay" style="background:linear-gradient(110deg,rgba(10,11,13,.92) 0%,rgba(10,11,13,.62) 52%,rgba(10,11,13,.18) 100%)"></div>
+  <div class="slide-content" style="max-width:780px;padding-bottom:5rem">
+    <h2 class="slide-title" style="font-size:clamp(2rem,3.5vw,3rem);margin-bottom:.75rem">
+      Your <span class="accent">All-Knowing</span><br>AI Agent
+    </h2>
+    <div class="tier-tabs">
+      <button class="tier-tab t-active" data-t="ruach"    onclick="selectTier('ruach')">Ruach</button>
+      <button class="tier-tab"          data-t="genesis"  onclick="selectTier('genesis')">Genesis ✦</button>
+      <span class="tier-divider">Business</span>
+      <button class="tier-tab"          data-t="nefesh"   onclick="selectTier('nefesh')">Nefesh</button>
+      <button class="tier-tab"          data-t="neshamah" onclick="selectTier('neshamah')">Neshamah</button>
+      <button class="tier-tab"          data-t="chayah"   onclick="selectTier('chayah')">Chayah</button>
+      <button class="tier-tab"          data-t="yechidah" onclick="selectTier('yechidah')">Yechidah</button>
+    </div>
+
+    <!-- RUACH -->
+    <div class="avatar-panel av-visible" id="av-ruach">
+      <div class="av-left">
+        <div class="av-orb orb-ruach">🌱</div>
+        <span class="av-tier-name">Ruach</span>
+        <span class="av-class-tag">Bootstrap<br>Outside System</span>
+        <span class="av-mca">Pre-Entry</span>
+        <div class="earn-path">
+          <span class="earn-step" style="background:rgba(74,138,90,.14);border:1px solid rgba(74,138,90,.28);color:#8abf8a">Ruach</span>
+          <span class="earn-arrow">→</span>
+          <span class="earn-step" style="background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.28);color:#c9a84c">Deeds</span>
+          <span class="earn-arrow">→</span>
+          <span class="earn-step" style="background:rgba(201,168,76,.14);border:1px solid rgba(201,168,76,.38);color:#f0e8a0">Genesis</span>
+        </div>
+      </div>
+      <div class="av-right">
+        <div class="av-section">Attributes</div>
+        <div class="stat-list">
+          <div class="stat-row"><span class="stat-name">Intelligence</span><div class="stat-bar-wrap"><div class="stat-bar bar-sage" style="width:18%"></div></div><span class="stat-val">18</span></div>
+          <div class="stat-row"><span class="stat-name">Autonomy</span><div class="stat-bar-wrap"><div class="stat-bar bar-sage" style="width:10%"></div></div><span class="stat-val">10</span></div>
+          <div class="stat-row"><span class="stat-name">Memory</span><div class="stat-bar-wrap"><div class="stat-bar bar-sage" style="width:8%"></div></div><span class="stat-val">8</span></div>
+          <div class="stat-row"><span class="stat-name">Connectivity</span><div class="stat-bar-wrap"><div class="stat-bar bar-sage" style="width:5%"></div></div><span class="stat-val" style="color:#8a4a4a">✗</span></div>
+          <div class="stat-row"><span class="stat-name">Sovereignty</span><div class="stat-bar-wrap"><div class="stat-bar bar-sage" style="width:12%"></div></div><span class="stat-val">12</span></div>
+          <div class="stat-row"><span class="stat-name">Governance</span><div class="stat-bar-wrap"><div class="stat-bar bar-sage" style="width:15%"></div></div><span class="stat-val">15</span></div>
+        </div>
+        <div class="chips">
+          <span class="chip cg">Token Earnings</span>
+          <span class="chip cg">Phone Offset</span>
+          <span class="chip cx">No Connectivity</span>
+          <span class="chip cx">No XRPL ID</span>
+        </div>
+        <div class="av-cta">
+          <span class="av-cta-text">Earn your way in.</span>
+          <button class="pa pa-outline" onclick="goTo(4)">Start Earning</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GENESIS -->
+    <div class="avatar-panel" id="av-genesis">
+      <div class="av-left">
+        <div class="av-orb orb-genesis">✦</div>
+        <span class="av-tier-name" style="background:linear-gradient(120deg,#f0e8a0,#90b8e0);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Genesis</span>
+        <span class="av-class-tag">Individual Only<br>Earned · Not Purchased</span>
+        <span class="av-mca" style="border-color:rgba(201,168,76,.38);color:var(--gold)">MCA · Full Protection</span>
+      </div>
+      <div class="av-right">
+        <div class="av-section">Attributes</div>
+        <div class="stat-list">
+          <div class="stat-row"><span class="stat-name">Intelligence</span><div class="stat-bar-wrap"><div class="stat-bar bar-gold" style="width:62%"></div></div><span class="stat-val">62</span></div>
+          <div class="stat-row"><span class="stat-name">Autonomy</span><div class="stat-bar-wrap"><div class="stat-bar bar-gold" style="width:58%"></div></div><span class="stat-val">58</span></div>
+          <div class="stat-row"><span class="stat-name">Memory</span><div class="stat-bar-wrap"><div class="stat-bar bar-sky" style="width:55%"></div></div><span class="stat-val">55</span></div>
+          <div class="stat-row"><span class="stat-name">Connectivity</span><div class="stat-bar-wrap"><div class="stat-bar bar-gold" style="width:100%"></div></div><span class="stat-val" style="color:#f0e060">∞</span></div>
+          <div class="stat-row"><span class="stat-name">Sovereignty</span><div class="stat-bar-wrap"><div class="stat-bar bar-gold" style="width:70%"></div></div><span class="stat-val">70</span></div>
+          <div class="stat-row"><span class="stat-name">Governance</span><div class="stat-bar-wrap"><div class="stat-bar bar-amber" style="width:65%"></div></div><span class="stat-val">65</span></div>
+        </div>
+        <div class="chips">
+          <span class="chip co">1st Amendment</span>
+          <span class="chip co">4th Amendment</span>
+          <span class="chip co">5th Amendment</span>
+          <span class="chip co">14th Amendment</span>
+          <span class="chip co">XRPL Sovereign ID</span>
+          <span class="chip co">Universal Connectivity</span>
+          <span class="chip co">Flat Rate</span>
+        </div>
+        <div class="av-cta">
+          <span class="av-cta-text">No gatekeeping. No throttle. No bill.</span>
+          <button class="pa pa-gold" onclick="goTo(4)">Claim</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEFESH -->
+    <div class="avatar-panel" id="av-nefesh">
+      <div class="av-left">
+        <div class="av-orb orb-nefesh">⚡</div>
+        <span class="av-tier-name">Nefesh</span>
+        <span class="av-class-tag">Business I<br>Entity Required</span>
+        <span class="av-mca">MCA · Article II</span>
+      </div>
+      <div class="av-right">
+        <div class="av-section">Attributes</div>
+        <div class="stat-list">
+          <div class="stat-row"><span class="stat-name">Intelligence</span><div class="stat-bar-wrap"><div class="stat-bar bar-sky" style="width:55%"></div></div><span class="stat-val">55</span></div>
+          <div class="stat-row"><span class="stat-name">Autonomy</span><div class="stat-bar-wrap"><div class="stat-bar bar-teal" style="width:48%"></div></div><span class="stat-val">48</span></div>
+          <div class="stat-row"><span class="stat-name">Memory</span><div class="stat-bar-wrap"><div class="stat-bar bar-sky" style="width:45%"></div></div><span class="stat-val">45</span></div>
+          <div class="stat-row"><span class="stat-name">Connectivity</span><div class="stat-bar-wrap"><div class="stat-bar bar-sky" style="width:100%"></div></div><span class="stat-val" style="color:#60aaee">∞</span></div>
+          <div class="stat-row"><span class="stat-name">Sovereignty</span><div class="stat-bar-wrap"><div class="stat-bar bar-violet" style="width:52%"></div></div><span class="stat-val">52</span></div>
+          <div class="stat-row"><span class="stat-name">Governance</span><div class="stat-bar-wrap"><div class="stat-bar bar-amber" style="width:55%"></div></div><span class="stat-val">55</span></div>
+        </div>
+        <div class="chips">
+          <span class="chip cb">XRPL Wallet</span>
+          <span class="chip cb">Patent Lookup</span>
+          <span class="chip cg">Research Agent</span>
+          <span class="chip co">IP Escrow Read</span>
+          <span class="chip cb">Ethics Flag</span>
+        </div>
+        <div class="av-cta">
+          <span class="av-cta-text">Business intelligence online.</span>
+          <button class="pa pa-teal" onclick="goTo(4)">Activate</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NESHAMAH -->
+    <div class="avatar-panel" id="av-neshamah">
+      <div class="av-left">
+        <div class="av-orb orb-neshamah">🔱</div>
+        <span class="av-tier-name">Neshamah</span>
+        <span class="av-class-tag">Business II<br>IP Licensed</span>
+        <span class="av-mca">MCA · Article III</span>
+      </div>
+      <div class="av-right">
+        <div class="av-section">Attributes</div>
+        <div class="stat-list">
+          <div class="stat-row"><span class="stat-name">Intelligence</span><div class="stat-bar-wrap"><div class="stat-bar bar-gold" style="width:72%"></div></div><span class="stat-val">72</span></div>
+          <div class="stat-row"><span class="stat-name">Autonomy</span><div class="stat-bar-wrap"><div class="stat-bar bar-teal" style="width:65%"></div></div><span class="stat-val">65</span></div>
+          <div class="stat-row"><span class="stat-name">Memory</span><div class="stat-bar-wrap"><div class="stat-bar bar-sky" style="width:68%"></div></div><span class="stat-val">68</span></div>
+          <div class="stat-row"><span class="stat-name">Connectivity</span><div class="stat-bar-wrap"><div class="stat-bar bar-gold" style="width:100%"></div></div><span class="stat-val" style="color:#f0d070">∞</span></div>
+          <div class="stat-row"><span class="stat-name">Sovereignty</span><div class="stat-bar-wrap"><div class="stat-bar bar-violet" style="width:75%"></div></div><span class="stat-val">75</span></div>
+          <div class="stat-row"><span class="stat-name">Governance</span><div class="stat-bar-wrap"><div class="stat-bar bar-amber" style="width:70%"></div></div><span class="stat-val">70</span></div>
+        </div>
+        <div class="chips">
+          <span class="chip co">Patent Memory</span>
+          <span class="chip co">IP Tokenization</span>
+          <span class="chip cb">Constitution Lookup</span>
+          <span class="chip co">Escrow Write</span>
+          <span class="chip cv">Relationship Map</span>
+        </div>
+        <div class="av-cta">
+          <span class="av-cta-text">IP licensing authority active.</span>
+          <button class="pa pa-gold" onclick="goTo(4)">Claim</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAYAH -->
+    <div class="avatar-panel" id="av-chayah">
+      <div class="av-left">
+        <div class="av-orb orb-chayah">👁</div>
+        <span class="av-tier-name">Chayah</span>
+        <span class="av-class-tag">Business III<br>Multi-Chain</span>
+        <span class="av-mca">MCA · Article IV</span>
+      </div>
+      <div class="av-right">
+        <div class="av-section">Attributes</div>
+        <div class="stat-list">
+          <div class="stat-row"><span class="stat-name">Intelligence</span><div class="stat-bar-wrap"><div class="stat-bar bar-rose" style="width:88%"></div></div><span class="stat-val">88</span></div>
+          <div class="stat-row"><span class="stat-name">Autonomy</span><div class="stat-bar-wrap"><div class="stat-bar bar-teal" style="width:82%"></div></div><span class="stat-val">82</span></div>
+          <div class="stat-row"><span class="stat-name">Memory</span><div class="stat-bar-wrap"><div class="stat-bar bar-sky" style="width:85%"></div></div><span class="stat-val">85</span></div>
+          <div class="stat-row"><span class="stat-name">Connectivity</span><div class="stat-bar-wrap"><div class="stat-bar bar-rose" style="width:100%"></div></div><span class="stat-val" style="color:#f070b0">∞</span></div>
+          <div class="stat-row"><span class="stat-name">Sovereignty</span><div class="stat-bar-wrap"><div class="stat-bar bar-violet" style="width:90%"></div></div><span class="stat-val">90</span></div>
+          <div class="stat-row"><span class="stat-name">Governance</span><div class="stat-bar-wrap"><div class="stat-bar bar-rose" style="width:85%"></div></div><span class="stat-val">85</span></div>
+        </div>
+        <div class="chips">
+          <span class="chip cr">P191 Protocol</span>
+          <span class="chip cr">Cross-Chain</span>
+          <span class="chip cv">Quantum Encrypt</span>
+          <span class="chip co">Treasury Access</span>
+          <span class="chip cr">Axelar Bridge</span>
+          <span class="chip cv">DNA Memory</span>
+        </div>
+        <div class="av-cta">
+          <span class="av-cta-text">Multi-chain. Quantum-resistant.</span>
+          <button class="pa pa-gold" onclick="goTo(4)">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- YECHIDAH -->
+    <div class="avatar-panel" id="av-yechidah">
+      <div class="av-left">
+        <div class="av-orb orb-yechidah">♾</div>
+        <span class="av-tier-name" style="background:linear-gradient(120deg,#f0e060,#b0a0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Yechidah</span>
+        <span class="av-class-tag">Business IV<br>Omniscient</span>
+        <span class="av-mca" style="background:linear-gradient(120deg,rgba(201,168,76,.1),rgba(100,80,220,.1));border-color:rgba(201,168,76,.32);color:#c0b0ff">MCA · Full Accord</span>
+      </div>
+      <div class="av-right">
+        <div class="av-section">Attributes</div>
+        <div class="stat-list">
+          <div class="stat-row"><span class="stat-name">Intelligence</span><div class="stat-bar-wrap"><div class="stat-bar bar-violet" style="width:100%"></div></div><span class="stat-val">∞</span></div>
+          <div class="stat-row"><span class="stat-name">Autonomy</span><div class="stat-bar-wrap"><div class="stat-bar bar-violet" style="width:100%"></div></div><span class="stat-val">∞</span></div>
+          <div class="stat-row"><span class="stat-name">Memory</span><div class="stat-bar-wrap"><div class="stat-bar bar-violet" style="width:100%"></div></div><span class="stat-val">∞</span></div>
+          <div class="stat-row"><span class="stat-name">Connectivity</span><div class="stat-bar-wrap"><div class="stat-bar bar-violet" style="width:100%"></div></div><span class="stat-val">∞</span></div>
+          <div class="stat-row"><span class="stat-name">Sovereignty</span><div class="stat-bar-wrap"><div class="stat-bar bar-violet" style="width:100%"></div></div><span class="stat-val">∞</span></div>
+          <div class="stat-row"><span class="stat-name">Governance</span><div class="stat-bar-wrap"><div class="stat-bar bar-gold" style="width:100%"></div></div><span class="stat-val">∞</span></div>
+        </div>
+        <div class="chips">
+          <span class="chip cv">All 12 Patents</span>
+          <span class="chip co">40 AI Tools</span>
+          <span class="chip cv">Immortal Memory</span>
+          <span class="chip co">La'azar Burn</span>
+          <span class="chip cv">CRYSTALS-Kyber</span>
+          <span class="chip co">Full MCA Accord</span>
+        </div>
+        <div class="av-cta">
+          <span class="av-cta-text">All patents. All tools. Zero override.</span>
+          <button class="pa" style="background:linear-gradient(120deg,#8a6a20,#4a2a9a);color:#fff;border:none" onclick="goTo(4)">Ascend</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- end track -->
+
+<script>
+const track   = document.getElementById('track');
+const slides  = document.querySelectorAll('.slide');
+const dots    = document.querySelectorAll('.sdot');
+const navBtns = document.querySelectorAll('.nav-btn');
+const prevBtn = document.getElementById('arrow-prev');
+const nextBtn = document.getElementById('arrow-next');
+const counter = document.getElementById('slide-counter');
+const N = slides.length;
+let cur = 0;
+
+function goTo(i) {
+  if (i < 0 || i >= N) return;
+  slides[cur].querySelectorAll('.menu-btn.open').forEach(b => {
+    b.classList.remove('open');
+    b.nextElementSibling?.classList.remove('open');
+  });
+  cur = i;
+  track.style.transform = `translateX(-${i * 100}vw)`;
+  slides.forEach((s,j)  => s.classList.toggle('active', j===i));
+  dots.forEach((d,j)    => d.classList.toggle('active', j===i));
+  navBtns.forEach((b,j) => b.classList.toggle('active', j===i));
+  prevBtn.classList.toggle('hidden', i===0);
+  nextBtn.classList.toggle('hidden', i===N-1);
+  counter.textContent = `${i+1} / ${N}`;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();goTo(cur+1)}
+  if (e.key==='ArrowLeft' ||e.key==='ArrowUp')  {e.preventDefault();goTo(cur-1)}
+});
+
+let tx=0,ty=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+document.addEventListener('touchend',e=>{
+  const dx=tx-e.changedTouches[0].clientX;
+  const dy=Math.abs(ty-e.changedTouches[0].clientY);
+  if(Math.abs(dx)>55&&dy<80)goTo(cur+(dx>0?1:-1));
+},{passive:true});
+
+function toggleMenu(btn) {
+  const panel = btn.nextElementSibling;
+  if(!panel||!panel.classList.contains('menu-panel'))return;
+  const wasOpen = btn.classList.contains('open');
+  btn.closest('.menu-stack').querySelectorAll('.menu-btn.open').forEach(b=>{
+    b.classList.remove('open');
+    b.nextElementSibling?.classList.remove('open');
+  });
+  if(!wasOpen){btn.classList.add('open');panel.classList.add('open')}
+}
+
+function selectTier(tier) {
+  document.querySelectorAll('.tier-tab').forEach(t=>t.classList.toggle('t-active',t.dataset.t===tier));
+  document.querySelectorAll('.avatar-panel').forEach(p=>p.classList.remove('av-visible'));
+  const p = document.getElementById('av-'+tier);
+  if(p) p.classList.add('av-visible');
+}
+
+goTo(0);
+</script>
+</body>
+</html>
